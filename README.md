@@ -1,1 +1,1 @@
-# neural-network-cuda-sse
+# neural-network
