@@ -36,6 +36,21 @@ endif()
 
 # unit test
 if(UNIT_TEST)
+	add_executable(tensor_test ./test/tensor_test.cpp)
+	target_link_libraries(tensor_test cu)
+
+	add_executable(conv_test ./test/conv_test.cpp)
+	target_link_libraries(conv_test cu)
+
+	add_executable(fc_test ./test/fc_test.cpp)
+	target_link_libraries(fc_test cu)
+
+	add_executable(pool_test ./test/pool_test.cpp)
+	target_link_libraries(pool_test cu)
+
+	add_executable(activation_test ./test/activation_test.cpp)
+	target_link_libraries(activation_test cu)
+
 	add_executable(minist_test ./test/minist_test.cpp)
 	target_link_libraries(minist_test cu)
 endif()
