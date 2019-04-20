@@ -29,7 +29,7 @@ option(UNIT_TEST "unit test" ON)
 
 # wrap library
 if(WRAP_LIB)
-	pybind11_add_module(neural_network MODULE ./src/cuda/bind.cpp)
+	pybind11_add_module(neural_network MODULE ./src/cuda/bind11.cpp)
 	target_link_libraries(neural_network cu)
 endif()
 
