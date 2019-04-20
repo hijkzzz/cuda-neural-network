@@ -9,7 +9,7 @@
       ],
       "buildRoot": "${workspaceRoot}\\build",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": "",
+      "cmakeCommandArgs": "-DCMAKE_PREFIX_PATH=C:\\Users\\janhu\\Desktop\\tools\\pybind11",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": ""
     }

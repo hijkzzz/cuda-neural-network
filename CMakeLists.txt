@@ -6,18 +6,18 @@ find_package(CUDA)
 include_directories(${CUDA_INCLUDE_DIRS})
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_61,code=sm_61\'")
 
-# find python
-find_package(PythonLibs)
-include_directories(${PYTHON_INCLUDE_PATH})
+# find pybind11
+add_subdirectory(./src/pybind11)
+set(PYBIND11_CPP_STANDARD -std=c++14)
 
 # add source
-file(GLOB_RECURSE HEADERS ./src/*.cuh ./src/*.h)
-file(GLOB_RECURSE SOURCES ./src/*.cu ./src/*.cpp)
+file(GLOB_RECURSE HEADERS ./src/cuda/*.cuh)
+file(GLOB_RECURSE SOURCES ./src/cuda/*.cu)
 
 source_group("Include" FILES ${HEADERS})
 source_group("Source" FILES ${SOURCES})
 
-include_directories(./src/*)
+include_directories(./src/cuda)
 
 # add library
 cuda_add_library(cu STATIC ${SOURCES})
@@ -28,6 +28,8 @@ option(UNIT_TEST "unit test" ON)
 
 # wrap library
 if(WRAP_LIB)
+	pybind11_add_module(neural_network ./src/python/bind.cpp)
+	target_link_libraries(neural_network cu)
 endif()
 
 # unit test
