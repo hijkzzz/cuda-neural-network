@@ -2,6 +2,9 @@
 
 #include <thrust/device_vector.h>
 
+#define BLOCK_SIZE_1D 256
+#define BLOCK_SIZE_2D 16
+
 struct Storage {
   thrust::device_vector<float> data;
   thrust::device_vector<std::size_t> shape;
