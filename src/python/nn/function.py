@@ -1,4 +1,4 @@
 # coding: utf-8
 
-def Module(object):
+def Function(object):
     pass
