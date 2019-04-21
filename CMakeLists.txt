@@ -4,12 +4,17 @@ project(neural_network LANGUAGES CXX CUDA)
 # find cuda
 find_package(CUDA)
 include_directories(${CUDA_INCLUDE_DIRS})
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_61,code=sm_61")
+list(APPEND CMAKE_CUDA_FLAGS "-gencode arch=compute_61,code=sm_61")
+if(CMAKE_COMPILER_IS_GNUCXX)
+	list(APPEND CMAKE_CUDA_FLAGS "-std=c++14")
+endif()
 
 # find pybind11
 add_subdirectory(./src/pybind11)
 include_directories(${PYBIND11_INCLUDE_DIR})
-set(PYBIND11_CPP_STANDARD -std=c++14)
+if(CMAKE_COMPILER_IS_GNUCXX)
+	set(PYBIND11_CPP_STANDARD "-std=c++14")
+endif()
 
 # add source
 file(GLOB HEADERS ./src/cuda/*.cuh)
@@ -29,12 +34,16 @@ option(UNIT_TEST "unit test" ON)
 
 # wrap library
 if(WRAP_LIB)
-	pybind11_add_module(neural_network MODULE ./src/cuda/bind11.cpp)
+	pybind11_add_module(neural_network MODULE ./src/python/pybind11.cpp)
 	target_link_libraries(neural_network cu)
 endif()
 
 # unit test
 if(UNIT_TEST)
+	# storage
+	add_executable(storage_test ./test/cuda/storage_test.cpp)
+	target_link_libraries(storage_test cu)
+
 	# tensor
 	add_executable(tensor_test ./test/cuda/tensor_test.cpp)
 	target_link_libraries(tensor_test cu)
