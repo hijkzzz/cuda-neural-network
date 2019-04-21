@@ -1,5 +1,6 @@
-#include <tensor.cuh>
 #include <cuda_runtime.h>
+
+#include <tensor.cuh>
 
 void tensor_add(const Storage *a, const Storage *b, Storage *c) {
   float *a_ptr = thrust::raw_pointer_cast(a->data.data());
