@@ -1,7 +1,6 @@
-#include <pybind11/pybind11.h>
-
 #include <storage.cuh>
-#include <utils.h>
+
+#include <pybind11/pybind11.h>
 
 // bind NumPy and Storage
 py::class_<Matrix>(m, "Storage", py::buffer_protocol())
