@@ -19,7 +19,7 @@ endif()
 # add source
 file(GLOB HEADERS ./src/cuda/*.cuh)
 file(GLOB SOURCES ./src/cuda/*.cu)
-file(GLOB PYBIND11_SOURCES ./src/cuda/*_pybind11.cpp)
+file(GLOB PYBIND11_SOURCES ./src/cuda/pybind11/*.cpp)
 
 source_group("Include" FILES ${HEADERS})
 source_group("Source" FILES ${SOURCES} ${PYBIND11_SOURCES})
