@@ -19,10 +19,10 @@ endif()
 # add source
 file(GLOB HEADERS ./src/cuda/*.cuh)
 file(GLOB SOURCES ./src/cuda/*.cu)
-file(GLOB PYBIND_SOURCES ./src/cuda/*.cpp)
+file(GLOB PYBIND11_SOURCES ./src/cuda/*_pybind11.cpp)
 
 source_group("Include" FILES ${HEADERS})
-source_group("Source" FILES ${SOURCES} ${PYBIND_SOURCES})
+source_group("Source" FILES ${SOURCES} ${PYBIND11_SOURCES})
 
 include_directories(./src/cuda)
 
@@ -35,7 +35,7 @@ option(UNIT_TEST "unit test" ON)
 
 # wrap library
 if(WRAP_LIB)
-	pybind11_add_module(neural_network MODULE ${PYBIND_SOURCES})
+	pybind11_add_module(neural_network MODULE ${PYBIND11_SOURCES})
 	target_link_libraries(neural_network cu)
 endif()
 
