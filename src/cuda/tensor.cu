@@ -50,8 +50,8 @@ Storage *tensor_pow(const Storage *a, float e) {
   float *c_ptr = thrust::raw_pointer_cast(c->data.data());
 
   std::size_t size = a->data.size();
-  std::size_t block_size = ceil(std::static_cast<double>(size) / BLOCK_SIZE_1D);
-  tensor_pow_h<<<block_size, BLOCK_SIZE_1D>>>(a_ptr, c_ptr, e, size);
+  std::size_t block_size = ceil(std::static_cast<double>(size) / BLOCK_SIZE);
+  tensor_pow_h<<<block_size, BLOCK_SIZE>>>(a_ptr, c_ptr, e, size);
 
   return c;
 }
@@ -70,8 +70,8 @@ Storage *tensor_log(const Storage *a) {
   float *c_ptr = thrust::raw_pointer_cast(c->data.data());
 
   std::size_t size = a->data.size();
-  std::size_t block_size = ceil(std::static_cast<double>(size) / BLOCK_SIZE_1D);
-  tensor_log_h<<<block_size, BLOCK_SIZE_1D>>>(a_ptr, c_ptr, size);
+  std::size_t block_size = ceil(std::static_cast<double>(size) / BLOCK_SIZE);
+  tensor_log_h<<<block_size, BLOCK_SIZE>>>(a_ptr, c_ptr, size);
 
   return c;
 }
@@ -89,8 +89,8 @@ Storage *tensor_exp(const Storage *a) {
   float *c_ptr = thrust::raw_pointer_cast(c->data.data());
 
   std::size_t size = a->data.size();
-  std::size_t block_size = ceil(std::static_cast<double>(size) / BLOCK_SIZE_1D);
-  tensor_exp_h<<<block_size, BLOCK_SIZE_1D>>>(a_ptr, c_ptr, size);
+  std::size_t block_size = ceil(std::static_cast<double>(size) / BLOCK_SIZE);
+  tensor_exp_h<<<block_size, BLOCK_SIZE>>>(a_ptr, c_ptr, size);
 
   return c;
 }
@@ -108,8 +108,8 @@ Storage *tensor_sigmoid(const Storage *a) {
   float *c_ptr = thrust::raw_pointer_cast(c->data.data());
 
   std::size_t size = a->data.size();
-  std::size_t block_size = ceil(std::static_cast<double>(size) / BLOCK_SIZE_1D);
-  tensor_sigmoid_h<<<block_size, BLOCK_SIZE_1D>>>(a_ptr, c_ptr, size);
+  std::size_t block_size = ceil(std::static_cast<double>(size) / BLOCK_SIZE);
+  tensor_sigmoid_h<<<block_size, BLOCK_SIZE>>>(a_ptr, c_ptr, size);
 
   return c;
 }
@@ -127,8 +127,8 @@ Storage *tensor_tanh(const Storage *a) {
   float *c_ptr = thrust::raw_pointer_cast(c->data.data());
 
   std::size_t size = a->data.size();
-  std::size_t block_size = ceil(std::static_cast<double>(size) / BLOCK_SIZE_1D);
-  tensor_tanh_h<<<block_size, BLOCK_SIZE_1D>>>(a_ptr, c_ptr, size);
+  std::size_t block_size = ceil(std::static_cast<double>(size) / BLOCK_SIZE);
+  tensor_tanh_h<<<block_size, BLOCK_SIZE>>>(a_ptr, c_ptr, size);
 
   return c;
 }
@@ -140,60 +140,14 @@ __global__ void tensor_tanh_h(const float *a, float *c, std::size_t size) {
   }
 }
 
-Storage *tensor_matmul(const Storage *a, const Storage *b) {
-  float *a_ptr = thrust::raw_pointer_cast(a->data.data());
-  float *b_ptr = thrust::raw_pointer_cast(b->data.data());
-  Storage *c = new Storage(a->shape);
-  float *c_ptr = thrust::raw_pointer_cast(c->data.data());
+Storage* tensor_matmul(const Storage *a, const Storage *b);
+__global__ void tensor_matmul_h(const float *a, const float *b, float *c, std::size_t width, std::size_t k, std::size_t height);
 
-  std::size_t dims = a->shape.size();
-  float *shape_a = thrust::raw_pointer_cast(a->shape.data());
-  float *shape_b = thrust::raw_pointer_cast(b->shape.data());
+Storage* tensor_transpose(const Storage *a);
+__global__ void tensor_transpose_h(const float *a, float *c, std::size_t width, std::size_t height);
 
-  return c;
-}
+Storage* tensor_log_softmax(const Storage *a);
+__global__ void tensor_log_softmax_h(const float *a, float *c, std::size_t stride);
 
-__global__ void tensor_matmul_h(const float *a, const float *b, float *c,
-                                std::size_t *shape_a, std::size_t *shape_b,
-                                std::size_t dims) {}
-
-Storage *tensor_transpose(const Storage *a, unsigned int dim0,
-                          unsigned int dim1, Storage *c) {}
-
-__global__ void tensor_transpose_h(const float *a, unsigned int dim0,
-                                   unsigned int dim1, float *c,
-                                   std::size_t *shape_a, std::size_t dims) {}
-
-Storage *tensor_log_softmax(const Storage *a, unsigned int dim) {}
-
-__global__ void tensor_log_softmax_h(const float *a, unsigned int dim, float *c,
-                                     std::size_t *shape_a, std::size_t dims) {}
-
-Storage *tensor_mean(const Storage *a, unsigned int dim) {
-  float *a_ptr = thrust::raw_pointer_cast(a->data.data());
-  std::size_t *a_shapre_ptr = thrust::raw_pointer_cast(a->shape.data());
-
-  thrust::device<float> new_shape(a->shape);
-  new_shape.erase(new_shape.begin() + dim);
-  Storage *c = new Storage(new_shape);
-  float *c_ptr = thrust::raw_pointer_cast(c->data.data());
-
-  std::size_t block_size =
-      ceil(std::static_cast<double>(c->data.size()) / BLOCK_SIZE_1D);
-  tensor_mean_h<<<block_size, BLOCK_SIZE_1D>>>(a_ptr, c_ptr, shape_a,
-                                               a->shape.size());
-}
-
-__global__ void tensor_mean_h(const float *a, float *c, std::size_t *shape_a,
-                              std::size_t dims) {
-  std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (index < size) {
-    float temp = 0;
-    std::size_t length = shape_a[dim];
-    for (std::size_t i = 0; i < length; ++i) {
-      temp += a[]
-    }
-    c[index] = temp / length;
-  }
-}
+Storage* tensor_mean(const Storage *a);
+__global__ void tensor_mean_h(const float *a, float *c, std::size_t stride);
