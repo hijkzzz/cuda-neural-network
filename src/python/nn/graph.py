@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from .function import Function
+from .module import Module
 
-class Graph(Function):
+class Graph(Module):
     pass

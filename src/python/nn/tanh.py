@@ -1,6 +1,6 @@
-#coding: utf-8
+# coding: utf-8
 
-from .function import Function
+from .module import Module
 
-class Tanh(Function):
+class Tanh(Module):
     pass

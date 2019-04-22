@@ -1,6 +1,6 @@
 #coding: utf-8
 
-from .function import *
+from .module import *
 from .graph import *
 from .conv import *
 from .linear import *
