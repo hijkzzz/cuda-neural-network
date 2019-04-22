@@ -1,4 +1,3 @@
-#include <momentum.h>
-#include <utils.cuh>
+#include <rmsprop.h>
 
 #include <pybind11/pybind11.h>

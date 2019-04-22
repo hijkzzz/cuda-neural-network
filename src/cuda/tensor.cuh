@@ -4,13 +4,11 @@
 #include <utils.cuh>
 
 Storage *tensor_add(const Storage *a, const Storage *b);
-
 Storage *tensor_add(const Storage *a, float value);
 
 Storage *tensor_sub(const Storage *a, const Storage *b);
 
 Storage *tensor_mul(const Storage *a, const Storage *b);
-
 Storage *tensor_mul(const Storage *a, float value);
 
 Storage *tensor_div(const Storage *a, const Storage *b);
