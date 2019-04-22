@@ -2,5 +2,5 @@
 
 from .function import Function
 
-def Linear(Function):
+class Linear(Function):
     pass

@@ -2,5 +2,5 @@
 
 from .function import Function
 
-def ReLU(Function):
+class ReLU(Function):
     pass

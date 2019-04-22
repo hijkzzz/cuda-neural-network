@@ -2,5 +2,5 @@
 
 from .function import Function
 
-def NLLLoss(Function):
+class NLLLoss(Function):
     pass

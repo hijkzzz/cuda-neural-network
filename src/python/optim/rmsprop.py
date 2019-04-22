@@ -2,5 +2,5 @@
 
 from .optimizer import Optimizer
 
-def RMSProp(Optimizer):
+class RMSProp(Optimizer):
     pass

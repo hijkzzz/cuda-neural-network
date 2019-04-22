@@ -2,5 +2,5 @@
 
 from .function import Function
 
-def Sigmoid(Function):
+class Sigmoid(Function):
     pass

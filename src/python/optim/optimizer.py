@@ -1,4 +1,4 @@
 # coding: utf-8
 
-def Optimizer(object):
+class Optimizer(object):
     pass

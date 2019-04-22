@@ -2,5 +2,5 @@
 
 from .function import Function
 
-def Graph(Function):
+class Graph(Function):
     pass

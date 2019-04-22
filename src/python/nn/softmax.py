@@ -2,5 +2,5 @@
 
 from .function import Function
 
-def Softmax(Function):
+class Softmax(Function):
     pass

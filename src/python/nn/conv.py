@@ -2,5 +2,5 @@
 
 from .function import Function
 
-def Conv(Function):
+class Conv(Function):
     pass

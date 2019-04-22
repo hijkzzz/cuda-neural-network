@@ -2,5 +2,5 @@
 
 from .function import Function
 
-def Tanh(Function):
+class Tanh(Function):
     pass

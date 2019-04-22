@@ -2,5 +2,5 @@
 
 from .function import Function
 
-def MSELoss(Function):
+class MSELoss(Function):
     pass
