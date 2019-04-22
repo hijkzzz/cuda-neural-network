@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from .module import Module
+from .operator import Operator
 
-class Conv(Module):
+class Conv(Operator):
     pass

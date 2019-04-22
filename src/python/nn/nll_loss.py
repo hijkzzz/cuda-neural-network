@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from .module import Module
+from .operator import Operator
 
-class NLLLoss(Module):
+class NLLLoss(Operator):
     pass
