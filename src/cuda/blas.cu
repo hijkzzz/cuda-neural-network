@@ -158,10 +158,10 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
   __shared__ float shared_input1[TILE_WIDTH][TILE_WIDTH];
   __shared__ float shared_input2[TILE_WIDTH][TILE_WIDTH];
 
-  std::size_t batch_size = blockIdx.x;
-  input1 += batch_size * height * k;
-  input2 += batch_size * k * width;
-  output += batch_size * height * width;
+  std::size_t batch_idx= blockIdx.x;
+  input1 += batch_idx * height * k;
+  input2 += batch_idx * k * width;
+  output += batch_idx * height * width;
 
   std::size_t bx = blockIdx.y;
   std::size_t by = blockIdx.z;
