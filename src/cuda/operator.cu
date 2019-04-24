@@ -1,6 +1,5 @@
 #include <operator.cuh>
 
-#include <cuda_runtime.h>
 #include <thrust/transform.h>
 
 #include <cfloat>

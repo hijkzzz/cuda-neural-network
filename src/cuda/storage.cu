@@ -4,7 +4,6 @@
 #include <cmath>
 #include <exception>
 
-#include <cuda_runtime.h>
 #include <thrust/fill.h>
 #include <thrust/functional.h>
 #include <thrust/transform.h>

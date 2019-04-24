@@ -45,15 +45,19 @@ if(UNIT_TEST)
 	add_executable(storage_test ./test/cuda/storage_test.cu)
 	target_link_libraries(storage_test cu)
 
-	# tensor
-	add_executable(tensor_test ./test/cuda/tensor_test.cu)
-	target_link_libraries(tensor_test cu)
+	# operator
+	add_executable(operator_test ./test/cuda/operator_test.cu)
+    target_link_libraries(operator_test cu)
+    
+	# linear
+	add_executable(linear_test ./test/cuda/linear_test.cu)
+	target_link_libraries(linear_test cu)
 
 	# conv
 	add_executable(conv_test ./test/cuda/conv_test.cu)
 	target_link_libraries(conv_test cu)
 
-	# sgd
-	add_executable(sgd_test ./test/cuda/sgd_test.cu)
+	# rmsprop
+	add_executable(sgd_test ./test/cuda/rmsprop_test.cu)
 	target_link_libraries(sgd_test cu)
 endif()

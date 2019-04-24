@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cuda_runtime.h>
+
 #define BLOCK_SIZE 256
 #define TILED_SIZE 16
 
@@ -27,3 +29,5 @@ template <class T> inline __device__ void swap(T &a, T &b) {
   a = b;
   b = temp;
 }
+
+inline __device__ void swap(std::size_t &a, std::size_t &b);

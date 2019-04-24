@@ -3,6 +3,8 @@
 #include <storage.cuh>
 #include <utils.cuh>
 
+#include <cuda_runtime.h>
+
 Storage *operator_add(const Storage *input1, const Storage *input2);
 
 Storage *operator_add(const Storage *input1, float value);
