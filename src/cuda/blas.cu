@@ -126,26 +126,28 @@ Storage *operator_exp(const Storage *input1) {
 }
 
 Storage *operator_matmul(const Storage *input1, const Storage *input2) {
-  if (input1->shape.size() != 2 || input2->shape.size() != 2) {
-    throw "operatormatmul: only support 2D Tensor";
+  if (input1->shape.size() != input2->shape.size() ||
+      input1->shape.back() != *(input2->shape.rbegin + 1)) {
+    throw "operator_matmul: shape error";
   }
 
-  if (input1->shape[1] != input2->shape[0]) {
-    throw "operatormatmul: input1->shape[1] != input2->shape[0]";
+  std::size_t height = *(input1->shape.rbegin + 1);
+  std::size_t k = input1->shape.back();
+  std::size_t width = input2->shape.back();
+  std::size_t batch_size = 1;
+  for (auto i = input1->shape.rbegin() + 2; i < input1->shape.rend(); i++) {
+    batch_size *= *i;
   }
-
-  std::size_t height = input1->shape[0];
-  std::size_t k = input1->shape[1];
-  std::size_t width = input2->shape[1];
 
   float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   float *input2_ptr = thrust::raw_pointer_cast(input2->data.data());
-  thrust::host_vector<std::size_t> new_shape{height, width};
+  thrust::host_vector<std::size_t> new_shape(input1->shape);
+  new_shape.back() = width;
   Storage *output = Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
 
   dim3 dim_block(TILED_SIZE, TILED_SIZE);
-  dim3 dim_grid(ceil((float)(height / TILE_WIDTH)), ceil((float)(width / TILE_WIDTH));
+  dim3 dim_grid(batch_size, ceil((float)(height / TILE_WIDTH)), ceil((float)(width / TILE_WIDTH));
   operator_matmul_h<<<dim_grid, dim_block>>>(input1_ptr, input2_ptr, output_ptr, height, k, width);
 }
 
@@ -155,13 +157,19 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
 
   __shared__ float shared_input1[TILE_WIDTH][TILE_WIDTH];
   __shared__ float shared_input2[TILE_WIDTH][TILE_WIDTH];
-  int bx = blockIdx.x;
-  int by = blockIdx.y;
-  int tx = threadIdx.x;
-  int ty = threadIdx.y;
 
-  int row = bx * TILE_WIDTH + tx;
-  int col = by * TILE_WIDTH + ty;
+  std::size_t batch_size = blockIdx.x;
+  input1 += batch_size * height * k;
+  input2 += batch_size * k * width;
+  output += batch_size * height * width;
+
+  std::size_t bx = blockIdx.y;
+  std::size_t by = blockIdx.z;
+  std::size_t tx = threadIdx.x;
+  std::size_t ty = threadIdx.y;
+
+  std::size_t row = bx * TILE_WIDTH + tx;
+  std::size_t col = by * TILE_WIDTH + ty;
   float v = 0;
 
   for (std::sizt_t i = 0; i < (std::sizt_t)(ceil((float)k / TILE_WIDTH)); i++) {
@@ -176,7 +184,7 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
       shared_input2[tx][ty] = 0;
     __syncthreads();
 
-    for (int j = 0; j < TILE_WIDTH; j++)
+    for (std::size_t j = 0; j < TILE_WIDTH; j++)
       v += shared_input1[tx][j] * shared_input2[j][ty];
     __syncthreads();
   }
