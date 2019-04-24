@@ -4,9 +4,7 @@
 #include <cmath>
 #include <exception>
 
-#include <thrust/fill.h>
-#include <thrust/functional.h>
-#include <thrust/transform.h>
+#include <thrust/reduce.h>
 
 Storage::Storage(thrust::host_vector<std::size_t> shape, float value = 0)
     : shape(shape) {

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cuda_runtime.h>
-#include <storage.cuh>
+#include <blas.cuh>
 
 Storage *operator_bias(const Storage *inputs, const Storage *bias);
 __global__ void operator_bias_h(const float *inputs, const float *bias,

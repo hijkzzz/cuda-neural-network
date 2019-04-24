@@ -1,3 +1,3 @@
 #pragma once
 
-#include <cuda_runtime.h>
+#include <blas.cuh>

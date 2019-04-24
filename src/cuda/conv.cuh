@@ -1,7 +1,6 @@
 #pragma once
 
-#include <cuda_runtime.h>
-#include <storage.cuh>
+#include <blas.cuh>
 
 Storage *operator_conv(const Storage *inputs, const Storage *filters);
 __global__ void operator_conv_h(const float *inputs, const float *filters,
