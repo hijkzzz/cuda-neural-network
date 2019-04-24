@@ -22,7 +22,7 @@ __device__ std::size_t loc2index(std::size_t *loc, std::size_t *shape,
   return index;
 }
 
-template <class T> __device__ void swap(T &a, T &b) {
+template <class T> inline __device__ void swap(T &a, T &b) {
   T temp = a;
   a = b;
   b = temp;

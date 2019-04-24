@@ -19,7 +19,7 @@ endif()
 # add source
 file(GLOB HEADERS ./src/cuda/*.cuh)
 file(GLOB SOURCES ./src/cuda/*.cu)
-file(GLOB PYBIND11_SOURCES ./src/cuda/pybind11/*.cpp)
+file(GLOB PYBIND11_SOURCES ./src/python/pybind11/*.cpp)
 
 source_group("Include" FILES ${HEADERS})
 source_group("Source" FILES ${SOURCES} ${PYBIND11_SOURCES})
@@ -42,18 +42,18 @@ endif()
 # unit test
 if(UNIT_TEST)
 	# storage
-	add_executable(storage_test ./test/cuda/storage_test.cpp)
+	add_executable(storage_test ./test/cuda/storage_test.cu)
 	target_link_libraries(storage_test cu)
 
 	# tensor
-	add_executable(tensor_test ./test/cuda/tensor_test.cpp)
+	add_executable(tensor_test ./test/cuda/tensor_test.cu)
 	target_link_libraries(tensor_test cu)
 
 	# conv
-	add_executable(conv_test ./test/cuda/conv_test.cpp)
+	add_executable(conv_test ./test/cuda/conv_test.cu)
 	target_link_libraries(conv_test cu)
 
 	# sgd
-	add_executable(sgd_test ./test/cuda/sgd_test.cpp)
+	add_executable(sgd_test ./test/cuda/sgd_test.cu)
 	target_link_libraries(sgd_test cu)
 endif()

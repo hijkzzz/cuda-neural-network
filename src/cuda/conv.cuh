@@ -1,5 +1,7 @@
 #pragma once
 
+#include <storage.cuh>
+
 Storage *tensor_conv(const Storage *inputs, const Storage *filters);
 void tensor_conv_h(const float *inputs, const float *filters, float *outputs);
 
