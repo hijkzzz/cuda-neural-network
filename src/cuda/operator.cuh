@@ -3,39 +3,41 @@
 #include <storage.cuh>
 #include <utils.cuh>
 
-Storage *tensor_add(const Storage *a, const Storage *b);
-Storage *tensor_add(const Storage *a, float value);
+Storage *operator_add(const Storage *input1, const Storage *input2);
 
-Storage *tensor_sub(const Storage *a, const Storage *b);
+Storage *operator_add(const Storage *input1, float value);
 
-Storage *tensor_mul(const Storage *a, const Storage *b);
-Storage *tensor_mul(const Storage *a, float value);
+Storage *operator_sub(const Storage *input1, const Storage *input2;
 
-Storage *tensor_div(const Storage *a, const Storage *b);
+Storage *operator_mul(const Storage *input1, const Storage *input2) ;
 
-Storage *tensor_pow(const Storage *a, float e);
+Storage *operator_mul(const Storage *input1, float value);
 
-Storage *tensor_log(const Storage *a);
+Storage *operator_div(const Storage *input1, const Storage *input2) ;
 
-Storage *tensor_exp(const Storage *a);
+Storage *operator_pow(const Storage *input1, float e) ;
 
-Storage *tensor_sigmoid(const Storage *a);
+Storage *operator_log(const Storage *input1) ;
 
-Storage *tensor_tanh(const Storage *a);
+Storage *operator_exp(const Storage *input1);
 
-Storage *tensor_matmul(const Storage *a, const Storage *b);
-__global__ void tensor_matmul_h(const float *a, const float *b, float *c,
-                                std::size_t height, std::size_t k,
-                                std::size_t width);
+Storage *operator_sigmoid(const Storage *input1);
 
-Storage *tensor_transpose(const Storage *a);
-__global__ void tensor_transpose_h(const float *a, float *c, std::size_t height,
-                                   std::size_t width);
+Storage *operator_tanh(const Storage *input1);
 
-Storage *tensor_log_softmax(const Storage *a);
-__global__ void tensor_log_softmax_h(const float *a, float *c, std::size_t size,
-                                     std::size_t stride);
+Storage *operator_matmul(const Storage *input1, const Storage *input2);
+__global__ void operator_matmul_h(const float *input1, const float *input2,
+                                  float *output, std::size_t height,
+                                  std::size_t k, std::size_t width);
 
-Storage *tensor_mean(const Storage *a);
-__global__ void tensor_mean_h(const float *a, float *c, std::size_t size,
-                              std::size_t stride);
+Storage *operator_transpose(const Storage *input1);
+__global__ void operator_transpose_h(const float *input1, float *output,
+                                     std::size_t height, std::size_t width);
+
+Storage *operator_log_softmax(const Storage *input1);
+__global__ void operator_log_softmax_h(const float *input1, float *output,
+                                       std::size_t size, std::size_t stride);
+
+Storage *operator_mean(const Storage *input1, std::size_t dim);
+__global__ void operator_mean_h(const float *input1, float *output,
+                                std::size_t size, std::size_t stride);
