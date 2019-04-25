@@ -2,7 +2,7 @@
 
 #include <cuda_runtime.h>
 
-#define BLOCK_SIZE 512
+#define BLOCK_SIZE 256
 #define TILED_SIZE 16
 
 #define CUDA_KERNEL_LOOP(i, n)                                                 \
