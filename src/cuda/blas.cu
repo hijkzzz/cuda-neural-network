@@ -5,10 +5,6 @@
 #include <cfloat>
 
 Storage *operator_add(const Storage *input1, const Storage *input2) {
-  if (input1->data.size() != input2->data.size()) {
-    throw "operatoradd: input1->data.size() != input2->data.size()";
-  }
-
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
                     input2->data.begin(), output->data.begin(),
@@ -32,10 +28,6 @@ Storage *operator_add(const Storage *input1, float value) {
 }
 
 Storage *operator_sub(const Storage *input1, const Storage *input2) {
-  if (input1->data.size() != input2->data.size()) {
-    throw "operatorsub: input1->data.size() != input2->data.size()";
-  }
-
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
                     input2->data.begin(), output->data.begin(),
@@ -44,10 +36,6 @@ Storage *operator_sub(const Storage *input1, const Storage *input2) {
 }
 
 Storage *operator_mul(const Storage *input1, const Storage *input2) {
-  if (input1->data.size() != input2->data.size()) {
-    throw "operatormul: input1->data.size() != input2->data.size()";
-  }
-
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
                     input2->data.begin(), output->data.begin(),
@@ -71,10 +59,6 @@ Storage *operator_mul(const Storage *input1, float value) {
 }
 
 Storage *operator_div(const Storage *input1, const Storage *input2) {
-  if (input1->data.size() != input2->data.size()) {
-    throw "operatordiv: input1->data.size() != input2->data.size()";
-  }
-
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
                     input2->data.begin(), output->data.begin(),
@@ -168,11 +152,6 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
 }
 
 Storage *operator_matmul(const Storage *input1, const Storage *input2) {
-  if (input1->shape.size() != input2->shape.size() ||
-      input1->shape.back() != *(input2->shape.rbegin + 1)) {
-    throw "operator_matmul: shape error";
-  }
-
   std::size_t height = *(input1->shape.rbegin + 1);
   std::size_t k = input1->shape.back();
   std::size_t width = input2->shape.back();
@@ -217,10 +196,6 @@ __global__ void operator_transpose_h(const float *input1, float *output,
 
 Storage *operator_transpose(const Storage *input1, std::size_t dim0,
                             std::size_t dim1) {
-  if (dim0 >= input1->shape.size() || dim1 >= input1->shape.size()) {
-    throw "operator_transpose: dim0 or dim1 out of range";
-  }
-
   float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   std::size_t *input1_shape_ptr =
       thrust::raw_pointer_cast(input1->shape.data());
