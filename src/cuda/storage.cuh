@@ -16,5 +16,3 @@ public:
   thrust::device_vector<float> data;
   thrust::device_vector<std::size_t> shape;
 };
-
-__global__ storage_xavier(float *a, std::size_t size, size_t in_size, size_t out_size);

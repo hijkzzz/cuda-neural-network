@@ -1,10 +1,11 @@
 #include <storage.cuh>
-#include <utils.h>
+#include <utils.cuh>
+
+#include <curand.h>
+#include <thrust/reduce.h>
 
 #include <cmath>
 #include <exception>
-
-#include <thrust/reduce.h>
 
 Storage::Storage(thrust::host_vector<std::size_t> shape, float value = 0)
     : shape(shape) {
@@ -25,19 +26,21 @@ Storage::Storage(thrust::host_vector<std::size_t> shape,
   this->data = std::move(data);
 }
 
-void Storage::xavier(size_t in_size, size_t out_size) {
-  float *a_ptr = thrust::raw_pointer_cast(this->data.data());
-  std::size_t size = this->data.size();
-  std::size_t block_size = ceil((float)(size) / BLOCK_SIZE);
-  float scale = std::sqrt((double)6) / std::sqrt((float)(in_size) + out_size);
-  storage_xavier<<<block_size, BLOCK_SIZE>>>(a_ptr, size, scale);
-}
-
-__global__ storage_uniform(float *a, std::size_t size, float scale) {
+__global__ storage_xavier(float *a, std::size_t size, float scale) {
   std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
   if (index < size) {
     curandState s;
     curand_init(1234, index, 0, &s);
     a[index] = (curand_uniform(&s) * 2 - 1) * scale;
   }
+}
+
+void Storage::xavier(size_t in_size, size_t out_size) {
+  float *a_ptr = thrust::raw_pointer_cast(this->data.data());
+  std::size_t size = this->data.size();
+  std::size_t block_size = ceil((float)(size) / BLOCK_SIZE);
+  float scale = std::sqrt((double)6) / std::sqrt((float)(in_size) + out_size);
+  storage_xavier<<<block_size, BLOCK_SIZE>>>(a_ptr, size, scale);
+
+  CUDA_POST_KERNEL_CHECK;
 }

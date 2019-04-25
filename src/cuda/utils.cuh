@@ -2,8 +2,26 @@
 
 #include <cuda_runtime.h>
 
-#define BLOCK_SIZE 256
+#define BLOCK_SIZE 512
 #define TILED_SIZE 16
+
+#define CUDA_KERNEL_LOOP(i, n)                                                 \
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n);                 \
+       i += blockDim.x * gridDim.x)
+
+#define CUDA_CHECK(condition)                                                  \
+  do {                                                                         \
+    cudaError_t error = condition;                                             \
+    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error);          \
+  } while (0)
+
+#define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
+
+template <class T> inline __device__ void swap(T &a, T &b) {
+  T temp = a;
+  a = b;
+  b = temp;
+}
 
 __device__ void index2loc(std::size_t index, std::size_t *shape,
                           std::size_t dims, std::size_t *loc) {
@@ -23,11 +41,3 @@ __device__ std::size_t loc2index(std::size_t *loc, std::size_t *shape,
   }
   return index;
 }
-
-template <class T> inline __device__ void swap(T &a, T &b) {
-  T temp = a;
-  a = b;
-  b = temp;
-}
-
-inline __device__ void swap(std::size_t &a, std::size_t &b);
