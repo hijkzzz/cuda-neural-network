@@ -60,3 +60,7 @@ Storage *operator_log_softmax(const Storage *input1, std::size_t dim) {
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
       dim dim_stride, size);
 }
+
+Storage *operator_d_log_softmax(const Storage *input1, std::size_t dim) {
+  
+}

@@ -39,7 +39,7 @@ Storage *operator_bias(const Storage *inputs, const Storage *bias) {
 
   std::size_t size = input1->data.size();
   std::size_t grid_size = ceil((float)(size) / BLOCK_SIZE);
-  operator_transpose_h<<<grid_size, BLOCK_SIZE>>>(
+  operator_bias_h<<<grid_size, BLOCK_SIZE>>>(
       inputs_ptr, bias_ptr, output_ptr, bias->data.size(), size);
 
   CUDA_POST_KERNEL_CHECK;
