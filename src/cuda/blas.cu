@@ -214,6 +214,7 @@ Storage *operator_transpose(const Storage *input1, std::size_t dim0,
       output_shape_ptr, dim0, dim1, size);
 
   CUDA_POST_KERNEL_CHECK;
+  return output;
 }
 
 __global__ void operator_mean_h(const float *input1, float *output,
@@ -270,6 +271,7 @@ Storage *operator_mean(const Storage *input1, std::size_t dim) {
       dim, dim_stride, size);
 
   CUDA_POST_KERNEL_CHECK;
+  return output;
 }
 
 __global__ void operator_sum_h(const float *input1, float *output,
@@ -325,4 +327,5 @@ Storage *operator_sum(const Storage *input1, std::size_t dim) {
       dim, dim_stride, size);
 
   CUDA_POST_KERNEL_CHECK;
+  return output;
 }
