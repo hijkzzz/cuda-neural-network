@@ -1,14 +1,56 @@
 #include <conv.cuh>
 
-__global__ void operator_conv_h(const float *inputs, const float *filters,
-                                float *outputs);
+#include <thrust/host_vector.h>
 
-Storage *operator_conv(const Storage *inputs, const Storage *filters);
+#include <memory>
 
-__global__ void operator_d_conv_h(const float *outputs_grad,
-                                  const Storage *filters, float *inputs_grad);
+// inputs: N*C*H*W
+// filters: C_out*C_in*K_h*K_w
+Storage *operator_conv(const Storage *inputs, const Storage *filters,
+                       const std::size_t pad_h, const std::size_t pad_w,
+                       const std::size_t stride_h, const std::size_t stride_w) {
+  std::size_t width = *inputs->shape.rbegin();
+  std::size_t height = *(inputs->shape.rbegin() + 1);
+  std::size_t channel_in = *(inputs->shape.rbegin() + 2);
+  std::size_t batch_size = *(inputs->shape.rbegin() + 3);
 
-Storage *operator_d_conv(const Storage *outputs_grad, const Storage *filters);
+  std::size_t kernel_w = *filters->shape.rbegin();
+  std::size_t kernel_h = *(filters->shape.rbegin() + 1);
+  std::size_t channel_out = *(filters->shape.rbegin() + 3);
+
+  std::size_t height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+  std::size_t width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+
+  // im2col
+  // [batch_size*(C_in*k_h*k_w)*(height_col * width_col)]
+  std::unique_ptr<Storage> cols(new Storage(
+      {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col}));
+
+  std::size_t batch_im_stride = channel_in * height * width;
+  std::size_t batch_col_stride =
+      channel_in * kernel_h * kernel_w * height_col * width_col;
+
+  float *inputs_ptr = thrust::raw_pointer_cast(inputs->data.data());
+  float *filters_ptr = thrust::raw_pointer_cast(filters->data.data());
+  float *cols_ptr = thrust::raw_pointer_cast(cols->data.data());
+  for (std::size_t i = 0; i < batch_size; i++) {
+    im2col(inputs_ptr + i * batch_im_stride, channel_in, height, width,
+           kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w,
+           cols_ptr + i * batch_col_stride);
+  }
+
+  // matmul
+  // [C_out*(C_in*k_h*k_w)] * [batch_size*(C_in*k_h*k_w)*(height_col *
+  // width_col)]
+
+  std::unique_ptr<Storage> new_filters(new Storage(*filters));
+  new_filters->shape = {channel_out, channel_in * kernel_h * kernel_w};
+
+  Storage *output = operator_matmul(new_filters.get(), cols.get());
+  return output;
+}
+
+Storage *operator_d_conv(const Storage *outputs_grad, const Storage *filters) {}
 
 __global__ im2col_h(const std::size_t n, const float *data_im,
                     const std::size_t height, const std::size_t width,
