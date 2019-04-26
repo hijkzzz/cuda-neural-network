@@ -1,6 +1,7 @@
 #include <operator.cuh>
 
 #include <thrust/transform.h>
+#include <thurst/functional.h>
 
 #include <cfloat>
 
@@ -9,21 +10,6 @@ Storage *operator_add(const Storage *input1, const Storage *input2) {
   thrust::transform(input1->data.begin(), input1->data.end(),
                     input2->data.begin(), output->data.begin(),
                     thrust::plus<float>());
-  return output;
-}
-
-struct add_functor {
-  const float e;
-  pow_functor(float _e) : e(_e) {}
-  __host__ __device__ float operator()(const float &x) const { return x + e; }
-};
-
-Storage *operator_add(const Storage *input1, float value) {
-  Storage *output = new Storage(input1->shape);
-  add_functor f(value);
-  thrust::transform(input1->data.begin(), input1->data.end(),
-                    output->data.begin(), f);
-
   return output;
 }
 
@@ -40,21 +26,6 @@ Storage *operator_mul(const Storage *input1, const Storage *input2) {
   thrust::transform(input1->data.begin(), input1->data.end(),
                     input2->data.begin(), output->data.begin(),
                     thrust::multiplies<float>());
-  return output;
-}
-
-struct mul_functor {
-  const float e;
-  mul_functor(float _e) : e(_e) {}
-  __host__ __device__ float operator()(const float &x) const { return x * e; }
-};
-
-Storage *operator_mul(const Storage *input1, float value) {
-  Storage *output = new Storage(input1->shape);
-  mul_functor f(value);
-  thrust::transform(input1->data.begin(), input1->data.end(),
-                    output->data.begin(), f);
-
   return output;
 }
 

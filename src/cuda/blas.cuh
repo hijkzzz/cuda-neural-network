@@ -7,13 +7,9 @@
 
 Storage *operator_add(const Storage *input1, const Storage *input2);
 
-Storage *operator_add(const Storage *input1, float value);
-
 Storage *operator_sub(const Storage *input1, const Storage *input2);
 
 Storage *operator_mul(const Storage *input1, const Storage *input2);
-
-Storage *operator_mul(const Storage *input1, float value);
 
 Storage *operator_div(const Storage *input1, const Storage *input2);
 
