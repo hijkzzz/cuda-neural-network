@@ -9,7 +9,7 @@
 struct rms_suqare_grads_functor {
   const float b;
 
-  update_suqare_grads_functor(float _b) : b(_b) {}
+  rms_suqare_grads_functor(float _b) : b(_b) {}
 
   __host__ __device__ float operator()(const float &x, const float &y) const {
     float sq = powf(y, 2);
@@ -20,7 +20,7 @@ struct rms_suqare_grads_functor {
 struct rms_grads_functor {
   const float a;
 
-  update_weights_functor(float _a) : a(_a) {}
+  rms_grads_functor(float _a) : a(_a) {}
 
   __host__ __device__ float operator()(const float &x, const float &y) const {
     return a * (x / sqrtf(y));
@@ -43,9 +43,9 @@ void rmsprop_update(Storage *square_grads, Storage *weights,
                     square_grads->data.begin(), square_grads->data.end(),
                     new_grads.begin(), gf);
 
-  thrust::device_vector<float> new_weights(grads->data.size());
+  thrust::device_vector<float> new_weights(weights->data.size());
   thrust::transform(weights->data.begin(), weights->data.end(),
                     new_grads->begin(), new_grads->end(), new_weights.begin(),
                     thrust::minus<float>());
-  *weights->data = std::move(new_weights);
+  weights->data = std::move(new_weights);
 }
