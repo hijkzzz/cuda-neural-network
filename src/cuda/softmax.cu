@@ -61,6 +61,5 @@ Storage *operator_log_softmax(const Storage *input1, std::size_t dim) {
       dim dim_stride, size);
 }
 
-Storage *operator_d_log_softmax(const Storage *input1, std::size_t dim) {
-  
-}
+Storage *operator_d_log_softmax(const Storage *input1, std::size_t dim,
+                                const Storage *output_grads) {}
