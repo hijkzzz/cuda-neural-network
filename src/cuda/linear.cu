@@ -11,8 +11,8 @@ Storage *operator_d_linear(const Storage *outputs_grad, const Storage *inputs,
   std::unique_ptr<Storage> inputs_transpose(operator_transpose(inputs, 0, 1));
 
   // Y = X * W
-  // dX = dY * W^T
-  // dW = X^T * dY
+  // dL/dX = dL/dY * W^T
+  // dL/dW = X^T * dL/dY
   Storage *inputs_grad = operator_matmul(outputs_grad, weights_transpose.get());
   std::unique_ptr<Storage> w_grad(operator_matmul(inputs_transpose.get(), outputs_grad));
   *weights_grad = std::move(*w_grad.get())
