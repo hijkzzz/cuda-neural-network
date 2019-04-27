@@ -23,7 +23,7 @@ struct rms_grads_functor {
   rms_grads_functor(float _a) : a(_a) {}
 
   __host__ __device__ float operator()(const float &x, const float &y) const {
-    return a * (x / sqrtf(y));
+    return a * (x / (sqrtf(y) + 1e-10));
   }
 };
 
