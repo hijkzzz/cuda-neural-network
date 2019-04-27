@@ -1,8 +1,8 @@
 #include <memory>
 #include <nll_loss.cuh>
 
-// L = -log_P * Y^T
-// dL/d(log_P) = -Y
+// L = sum(-log_P * Y^T) / N
+// dL/d(log_P) = -Y / N
 
 Storage *operator_nll_loss(const Storage *log_p, const Storage *y) {
   std::unique_ptr<Storage> y_transpose(operator_transpose(y, 0, 1));
@@ -12,5 +12,6 @@ Storage *operator_nll_loss(const Storage *log_p, const Storage *y) {
 }
 
 Storage *operator_d_nll_loss(const Storage *y) {
-  return operator_mul(y, (float)-1);
+  std::size_t batch_size = *y->shape.begin();
+  return operator_mul(y, (float)-1 / batch_size);
 }

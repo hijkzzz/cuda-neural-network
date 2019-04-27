@@ -1,5 +1,6 @@
 #include <conv.cuh>
 
+#include <thrust/copy.h>
 #include <thrust/host_vector.h>
 
 #include <memory>
@@ -40,17 +41,32 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
   }
 
   // matmul
-  // [C_out*(C_in*k_h*k_w)] * [batch_size*(C_in*k_h*k_w)*(height_col *
-  // width_col)]
-
+  // Y = F * im
+  // [C_out*(C_in*k_h*k_w)] * [(C_in*k_h*k_w)*(height_col*width_col)]
   std::unique_ptr<Storage> new_filters(new Storage(*filters));
   new_filters->shape = {channel_out, channel_in * kernel_h * kernel_w};
 
-  Storage *output = operator_matmul(new_filters.get(), cols.get());
+  // [batch_size * channel_out * (height_col * width_col)]
+  Storage *outputs = new Storage({batch_size, channel_out, height_col, width_col}));
+  std::size_t output_stride = channel_out * height_col * width_col;
+
+  for (std::size_t i = 0; i < batch_size; ++i) {
+    std::unique_ptr<Storage> temp(
+        operator_matmul(new_filters.get(), cols_ptr + i * batch_col_stride));
+    thrust::copy(temp->data.begin(), temp->data.end(),
+                 outputs.begin() + i * output_stride);
+  }
   return output;
 }
 
-Storage *operator_d_conv(const Storage *outputs_grad, const Storage *filters) {}
+// Y = F * im
+// dL/dF = dL/dY * im^T
+// dL/d_im = F^T * dL/dY
+Storage *operator_d_conv(const Storage *outputs_grad, const Storage *filters,
+                         Storage *filters_grad) {
+  Storage *inputs_grad = new Storage({});
+
+                         }
 
 __global__ im2col_h(const std::size_t n, const float *data_im,
                     const std::size_t height, const std::size_t width,
