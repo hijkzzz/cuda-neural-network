@@ -29,7 +29,9 @@ struct rms_grads_functor {
 
 void rmsprop_update(Storage *square_grads, Storage *weights,
                     const Storage *grads, float beta = 0.999,
-                    float learning_rate) {
+                    float learning_rate = 1e-3, float l2 = 1e-4) {
+  //TODO: add L2 weights grads
+
   rms_suqare_grads_functor sgf(beta);
   thrust::device_vector<float> new_square_grads(square_grads->data.size());
   thrust::transform(square_grads->data.begin(), square_grads->data.end(),
