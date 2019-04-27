@@ -61,8 +61,8 @@ Storage *operator_log_softmax(const Storage *input1, std::size_t dim) {
       dim dim_stride, size);
 }
 
-// Y = log_softmax(X) = x - log(exp(X) * 1_n)
-// dL/dX = dL/dY^T * [1_n - exp(x) / (exp(x) * 1_n)] = dL/dY^T * (1_n - softmax(x))
+// Y = log_softmax(X) = x - log(exp(X) * 1_n) * 1_n^T
+// dL/dX = dL/dY element_mul [exp(x) * 1_n_n / (exp(x) * 1_n)]
 Storage *operator_d_log_softmax(const Storage *input1, std::size_t dim,
                                 const Storage *output_grads) {
   
