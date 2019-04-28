@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required (VERSION 3.8)
-project(neural_network LANGUAGES CXX CUDA)
+project(neural_network C CXX CUDA)
 
 # find cuda
 find_package(CUDA)
