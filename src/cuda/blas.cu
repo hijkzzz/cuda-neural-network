@@ -114,26 +114,26 @@ Storage *operator_exp(const Storage *input1) {
 }
 
 __global__ void operator_matmul_h(const float *input1, const float *input2,
-                                  float *output, std::size_t height,
-                                  std::size_t k, std::size_t width) {
+                                  float *output, unsigned int height,
+                                  unsigned int k, unsigned int width) {
   __shared__ float shared_input1[TILE_SIZE][TILE_SIZE];
   __shared__ float shared_input2[TILE_SIZE][TILE_SIZE];
 
-  std::size_t batch_idx = blockIdx.x;
+  unsigned int batch_idx = blockIdx.x;
   input1 += batch_idx * height * k;
   input2 += batch_idx * k * width;
   output += batch_idx * height * width;
 
-  std::size_t bx = blockIdx.y;
-  std::size_t by = blockIdx.z;
-  std::size_t tx = threadIdx.x;
-  std::size_t ty = threadIdx.y;
+  unsigned int bx = blockIdx.y;
+  unsigned int by = blockIdx.z;
+  unsigned int tx = threadIdx.x;
+  unsigned int ty = threadIdx.y;
 
-  std::size_t row = bx * TILE_SIZE + tx;
-  std::size_t col = by * TILE_SIZE + ty;
+  unsigned int row = bx * TILE_SIZE + tx;
+  unsigned int col = by * TILE_SIZE + ty;
   float v = 0;
 
-  for (std::size_t i = 0; i < (std::size_t)(ceil((float)k / TILE_SIZE)); i++) {
+  for (unsigned int i = 0; i < (unsigned int)(ceil((float)k / TILE_SIZE)); i++) {
     if (i * TILE_SIZE + ty < k && row < height)
       shared_input1[tx][ty] = input1[row * k + i * TILE_SIZE + ty];
     else
@@ -145,7 +145,7 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
       shared_input2[tx][ty] = 0;
     __syncthreads();
 
-    for (std::size_t j = 0; j < TILE_SIZE; j++)
+    for (unsigned int j = 0; j < TILE_SIZE; j++)
       v += shared_input1[tx][j] * shared_input2[j][ty];
     __syncthreads();
   }
@@ -154,17 +154,17 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
 }
 
 Storage *operator_matmul(const Storage *input1, const Storage *input2) {
-  std::size_t height = *(input1->shape.rbegin + 1);
-  std::size_t k = input1->shape.back();
-  std::size_t width = input2->shape.back();
-  std::size_t batch_size = 1;
+  unsigned int height = *(input1->shape.rbegin + 1);
+  unsigned int k = input1->shape.back();
+  unsigned int width = input2->shape.back();
+  unsigned int batch_size = 1;
   for (auto i = input1->shape.rbegin() + 2; i < input1->shape.rend(); i++) {
     batch_size *= *i;
   }
 
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const float *input2_ptr = thrust::raw_pointer_cast(input2->data.data());
-  thrust::host_vector<std::size_t> new_shape(input1->shape);
+  thrust::host_vector<unsigned int> new_shape(input1->shape);
   new_shape.back() = width;
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
@@ -177,38 +177,38 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
 }
 
 __global__ void operator_transpose_h(const float *input1, float *output,
-                                     std::size_t *input1_shape,
-                                     std::size_t input1_dims,
-                                     std::size_t output_shape, std::size_t dim0,
-                                     std::size_t dim1, std::size_t size) {
-  std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+                                     unsigned int *input1_shape,
+                                     unsigned int input1_dims,
+                                     unsigned int output_shape, unsigned int dim0,
+                                     unsigned int dim1, unsigned int size) {
+  unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
-    std::size_t *loc = new std::size_t[input1_dims];
+    unsigned int *loc = new unsigned int[input1_dims];
     index2loc(index, input1_shape, input1_dims, loc);
     swap(loc[dim0], loc[dim1]);
-    std::size_t target_index = loc2index(loc, input1_shape, input1_dims);
+    unsigned int target_index = loc2index(loc, input1_shape, input1_dims);
     delete[] loc;
 
     output[target_index] = input1[index];
   }
 }
 
-Storage *operator_transpose(const Storage *input1, std::size_t dim0,
-                            std::size_t dim1) {
+Storage *operator_transpose(const Storage *input1, unsigned int dim0,
+                            unsigned int dim1) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
-  const std::size_t *input1_shape_ptr =
+  const unsigned int *input1_shape_ptr =
       thrust::raw_pointer_cast(input1->shape.data());
 
-  thrust::host_vector<std::size_t> new_shape(input1->shape);
+  thrust::host_vector<unsigned int> new_shape(input1->shape);
   std::swap(new_shape[dim0], new_shape[dim1]);
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
-  std::size_t *output_shape_ptr =
+  unsigned int *output_shape_ptr =
       thrust::raw_pointer_cast(output->shape.data());
 
-  std::size_t size = input1->data.size();
-  std::size_t grid_size = ceil((float)(size) / BLOCK_SIZE);
+  unsigned int size = input1->data.size();
+  unsigned int grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_transpose_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1->shape.size(),
       output_shape_ptr, dim0, dim1, size);
@@ -218,26 +218,26 @@ Storage *operator_transpose(const Storage *input1, std::size_t dim0,
 }
 
 __global__ void operator_mean_h(const float *input1, float *output,
-                                std::size_t *input1_shape,
-                                std::size_t input1_dims,
-                                std::size_t *output_shape, std::size_t dim,
-                                std::size_t dim_stride, std::size_t size) {
-  std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+                                unsigned int *input1_shape,
+                                unsigned int input1_dims,
+                                unsigned int *output_shape, unsigned int dim,
+                                unsigned int dim_stride, unsigned int size) {
+  unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
-    std::size_t length = input1_shape[dim];
+    unsigned int length = input1_shape[dim];
 
-    std::size_t *loc = new std::size_t[input1_dims];
+    unsigned int *loc = new unsigned int[input1_dims];
     index2loc(index, output_shape, input1_dims - 1, loc);
-    for (std::size_t i = input1_dims - 1; i > dim, i--) {
+    for (unsigned int i = input1_dims - 1; i > dim, i--) {
       loc[i] = loc[i - 1];
     }
     loc[dim] = 0;
-    std::size_t base = loc2index(loc, input1_shape, input1_dims);
+    unsigned int base = loc2index(loc, input1_shape, input1_dims);
     delete[] loc;
 
     double total = 0;
-    for (std::size_t i = 0; i < length; i++) {
+    for (unsigned int i = 0; i < length; i++) {
       total += input1[base + i * dim_stride];
     }
 
@@ -245,26 +245,26 @@ __global__ void operator_mean_h(const float *input1, float *output,
   }
 }
 
-Storage *operator_mean(const Storage *input1, std::size_t dim) {
+Storage *operator_mean(const Storage *input1, unsigned int dim) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
-  const std::size_t *input1_shape_ptr =
+  const unsigned int *input1_shape_ptr =
       thrust::raw_pointer_cast(input1->shape.data());
 
-  thrust::host_vector<std::size_t> new_shape(input1->shape);
+  thrust::host_vector<unsigned int> new_shape(input1->shape);
   new_shape.erase(new_shape.begin() + dim);
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
-  std::size_t *output_shape_ptr =
+  unsigned int *output_shape_ptr =
       thrust::raw_pointer_cast(output->shape.data());
 
-  std::size_t input1_dims = input1->shape.size();
-  std::size_t dim_stride = 1;
-  for (std::size_t i = dim + 1; i < input1_dims; i++) {
+  unsigned int input1_dims = input1->shape.size();
+  unsigned int dim_stride = 1;
+  for (unsigned int i = dim + 1; i < input1_dims; i++) {
     dim_stride *= input1_shape_ptr[i];
   }
 
-  std::size_t size = output->data.size();
-  std::size_t grid_size = ceil((float)(size) / BLOCK_SIZE);
+  unsigned int size = output->data.size();
+  unsigned int grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_mean_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, output_shape_ptr,
       dim, dim_stride, size);
@@ -274,26 +274,26 @@ Storage *operator_mean(const Storage *input1, std::size_t dim) {
 }
 
 __global__ void operator_sum_h(const float *input1, float *output,
-                               std::size_t *input1_shape,
-                               std::size_t input1_dims,
-                               std::size_t *output_shape, std::size_t dim,
-                               std::size_t dim_stride, std::size_t size) {
-  std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+                               unsigned int *input1_shape,
+                               unsigned int input1_dims,
+                               unsigned int *output_shape, unsigned int dim,
+                               unsigned int dim_stride, unsigned int size) {
+  unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
-    std::size_t length = input1_shape[dim];
+    unsigned int length = input1_shape[dim];
 
-    std::size_t *loc = new std::size_t[input1_dims];
+    unsigned int *loc = new unsigned int[input1_dims];
     index2loc(index, output_shape, input1_dims - 1, loc);
-    for (std::size_t i = input1_dims - 1; i > dim; i--) {
+    for (unsigned int i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
     }
     loc[dim] = 0;
-    std::size_t base = loc2index(loc, input1_shape, input1_dims);
+    unsigned int base = loc2index(loc, input1_shape, input1_dims);
     delete[] loc;
 
     double total = 0;
-    for (std::size_t i = 0; i < length; i++) {
+    for (unsigned int i = 0; i < length; i++) {
       total += input1[base + i * dim_stride];
     }
 
@@ -301,26 +301,26 @@ __global__ void operator_sum_h(const float *input1, float *output,
   }
 }
 
-Storage *operator_sum(const Storage *input1, std::size_t dim) {
+Storage *operator_sum(const Storage *input1, unsigned int dim) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
-  const std::size_t *input1_shape_ptr =
+  const unsigned int *input1_shape_ptr =
       thrust::raw_pointer_cast(input1->shape.data());
 
-  thrust::host_vector<std::size_t> new_shape(input1->shape);
+  thrust::host_vector<unsigned int> new_shape(input1->shape);
   new_shape.erase(new_shape.begin() + dim);
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
-  std::size_t *output_shape_ptr =
+  unsigned int *output_shape_ptr =
       thrust::raw_pointer_cast(output->shape.data());
 
-  std::size_t input1_dims = input1->shape.size();
-  std::size_t dim_stride = 1;
-  for (std::size_t i = dim + 1; i < input1_dims; i++) {
+  unsigned int input1_dims = input1->shape.size();
+  unsigned int dim_stride = 1;
+  for (unsigned int i = dim + 1; i < input1_dims; i++) {
     dim_stride *= input1_shape_ptr[i];
   }
 
-  std::size_t size = output->data.size();
-  std::size_t grid_size = ceil((float)(size) / BLOCK_SIZE);
+  unsigned int size = output->data.size();
+  unsigned int grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_mean_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, output_shape_ptr,
       dim, dim_stride, size);

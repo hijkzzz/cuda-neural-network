@@ -11,6 +11,6 @@ Storage *operator_nll_loss(const Storage *log_p, const Storage *y) {
 // L = 1_n^T * ((-log_P element_mul Y) * 1_k) / N
 // dL/d(log_P) = -Y / N
 Storage *operator_d_nll_loss(const Storage *y) {
-  std::size_t batch_size = *y->shape.begin();
+  unsigned int batch_size = *y->shape.begin();
   return operator_mul(y, (float)-1 / batch_size);
 }
