@@ -1,7 +1,5 @@
-#include <operator.cuh>
-
 #include <thrust/transform.h>
-#include <thurst/functional.h>
+#include <thrust/functional.h>
 
 #include <cfloat>
 
