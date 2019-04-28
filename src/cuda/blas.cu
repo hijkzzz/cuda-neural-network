@@ -1,3 +1,8 @@
+#include <blas.cuh>
+#include <utils.cuh>
+
+#include <cuda_runtime.h>
+#include <device_functions.h>
 #include <thrust/transform.h>
 #include <thrust/functional.h>
 
@@ -13,7 +18,7 @@ Storage *operator_add(const Storage *input1, const Storage *input2) {
 
 struct add_functor {
   const float e;
-  pow_functor(float _e) : e(_e) {}
+  add_functor(float _e) : e(_e) {}
   __host__ __device__ float operator()(const float &x) const { return x + e; }
 };
 
@@ -112,8 +117,8 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
                                   float *output, std::size_t height,
                                   std::size_t k, std::size_t width) {
 
-  __shared__ float shared_input1[TILE_WIDTH][TILE_WIDTH];
-  __shared__ float shared_input2[TILE_WIDTH][TILE_WIDTH];
+  __shared__ float shared_input1[TILE_SIZE][TILE_SIZE];
+  __shared__ float shared_input2[TILE_SIZE][TILE_SIZE];
 
   std::size_t batch_idx = blockIdx.x;
   input1 += batch_idx * height * k;
@@ -125,23 +130,23 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
   std::size_t tx = threadIdx.x;
   std::size_t ty = threadIdx.y;
 
-  std::size_t row = bx * TILE_WIDTH + tx;
-  std::size_t col = by * TILE_WIDTH + ty;
+  std::size_t row = bx * TILE_SIZE + tx;
+  std::size_t col = by * TILE_SIZE + ty;
   float v = 0;
 
-  for (std::sizt_t i = 0; i < (std::sizt_t)(ceil((float)k / TILE_WIDTH)); i++) {
-    if (i * TILE_WIDTH + ty < k && row < height)
-      shared_input1[tx][ty] = input1[row * k + i * TILE_WIDTH + ty];
+  for (std::size_t i = 0; i < (std::size_t)(ceil((float)k / TILE_SIZE)); i++) {
+    if (i * TILE_SIZE + ty < k && row < height)
+      shared_input1[tx][ty] = input1[row * k + i * TILE_SIZE + ty];
     else
       shared_input1[tx][ty] = 0;
 
-    if (i * TILE_WIDTH + tx < k && col < width)
-      shared_input2[tx][ty] = input2[(i * TILE_WIDTH + tx) * width + col];
+    if (i * TILE_SIZE + tx < k && col < width)
+      shared_input2[tx][ty] = input2[(i * TILE_SIZE + tx) * width + col];
     else
       shared_input2[tx][ty] = 0;
     __syncthreads();
 
-    for (std::size_t j = 0; j < TILE_WIDTH; j++)
+    for (std::size_t j = 0; j < TILE_SIZE; j++)
       v += shared_input1[tx][j] * shared_input2[j][ty];
     __syncthreads();
   }
@@ -166,8 +171,8 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
   Storage *output = Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
 
-  dim3 dim_block(TILED_SIZE, TILED_SIZE);
-  dim3 dim_grid(batch_size, ceil((float)(height / TILE_WIDTH)), ceil((float)(width / TILE_WIDTH));
+  dim3 dim_block(TILE_SIZE, TILE_SIZE);
+  dim3 dim_grid(batch_size, ceil((float)(height / TILE_SIZE)), ceil((float)(width / TILE_SIZE));
   operator_matmul_h<<<dim_grid, dim_block>>>(input1_ptr, input2_ptr, output_ptr, height, k, width);
 
   CUDA_POST_KERNEL_CHECK;
@@ -199,7 +204,7 @@ Storage *operator_transpose(const Storage *input1, std::size_t dim0,
   std::size_t *input1_shape_ptr =
       thrust::raw_pointer_cast(input1->shape.data());
 
-  std::host_vector<std::sizt_t> new_shape(input1->shape);
+  std::host_vector<std::size_t> new_shape(input1->shape);
   std::swap(new_shape[dim0], new_shape[dim1]);
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
