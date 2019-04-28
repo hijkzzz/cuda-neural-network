@@ -3,7 +3,7 @@
 __global__ void operator_log_softmax_h(const float *input1, float *output,
                                        std::size_t *input1_shape,
                                        std::size_t input1_dims,
-                                       std::size_t temp_shape_ptr,
+                                       std::size_t *temp_shape_ptr,
                                        std::size_t dim, std::size_t dim_stride,
                                        std::size_t size) {
   std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -13,7 +13,7 @@ __global__ void operator_log_softmax_h(const float *input1, float *output,
 
     std::size_t *loc = new std::size_t[input1_dims];
     index2loc(index, temp_shape_ptr, input1_dims - 1, loc);
-    for (std::size_t i = input1_dims - 1; i > dim, i--) {
+    for (std::size_t i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
     }
     loc[dim] = 0;
@@ -22,7 +22,7 @@ __global__ void operator_log_softmax_h(const float *input1, float *output,
 
     float max_ = -FLT_MIN;
     for (std::size_t i = 0; i < length; ++i) {
-      max_ = max(max_, input1[base + i * dim_stride]);
+      max_ = fmaxf(max_, input1[base + i * dim_stride]);
     }
 
     double logsum = 0;
@@ -38,8 +38,8 @@ __global__ void operator_log_softmax_h(const float *input1, float *output,
 }
 
 Storage *operator_log_softmax(const Storage *input1, std::size_t dim) {
-  float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
-  std::size_t *input1_shape_ptr =
+  const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
+  const std::size_t *input1_shape_ptr =
       thrust::raw_pointer_cast(input1->shape.data());
   Storage *output = new Storage(input1->shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
@@ -50,8 +50,8 @@ Storage *operator_log_softmax(const Storage *input1, std::size_t dim) {
 
   std::size_t input1_dims = input1->shape.size();
   std::size_t dim_stride = 1;
-  for (std::size_t i = dim + 1; i < input1_dims, i++) {
-    dim_stride *= input1_shape_ptr[i]; 
+  for (std::size_t i = dim + 1; i < input1_dims; i++) {
+    dim_stride *= input1_shape_ptr[i];
   }
 
   std::size_t size = input1->data.size() / input1->shape[dim];
@@ -62,8 +62,6 @@ Storage *operator_log_softmax(const Storage *input1, std::size_t dim) {
 }
 
 // Y = log_softmax(X) = x - log(exp(X) * 1_n) * 1_n^T
-// dL/dX = dL/dY - (dL/dY * 1_n * exp(x)) / (exp(x) * 1_n) 
+// dL/dX = dL/dY - (dL/dY * 1_n * exp(x)) / (exp(x) * 1_n)
 Storage *operator_d_log_softmax(const Storage *input1, std::size_t dim,
-                                const Storage *output_grads) {
-  
-}
+                                const Storage *output_grads) {}

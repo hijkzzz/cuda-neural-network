@@ -4,6 +4,7 @@
 #include <utils.cuh>
 
 #include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 
 Storage *operator_add(const Storage *input1, const Storage *input2);
 Storage *operator_add(const Storage *input1, float value);

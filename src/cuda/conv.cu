@@ -31,8 +31,8 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
   std::size_t batch_col_stride =
       channel_in * kernel_h * kernel_w * height_col * width_col;
 
-  float *inputs_ptr = thrust::raw_pointer_cast(inputs->data.data());
-  float *filters_ptr = thrust::raw_pointer_cast(filters->data.data());
+  const float *inputs_ptr = thrust::raw_pointer_cast(inputs->data.data());
+  const float *filters_ptr = thrust::raw_pointer_cast(filters->data.data());
   float *cols_ptr = thrust::raw_pointer_cast(cols->data.data());
   for (std::size_t i = 0; i < batch_size; i++) {
     im2col(inputs_ptr + i * batch_im_stride, channel_in, height, width,
@@ -44,19 +44,27 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
   // Y = F * im
   // [C_out*(C_in*k_h*k_w)] * [(C_in*k_h*k_w)*(height_col*width_col)]
   std::unique_ptr<Storage> new_filters(new Storage(*filters));
-  new_filters->shape = {channel_out, channel_in * kernel_h * kernel_w};
+  new_filters->shape = thrust::device_vector<std::size_t>{
+      channel_out, channel_in * kernel_h * kernel_w};
 
   // [batch_size * channel_out * (height_col * width_col)]
-  Storage *outputs = new Storage({batch_size, channel_out, height_col, width_col}));
+  Storage *outputs =
+      new Storage({batch_size, channel_out, height_col, width_col});
   std::size_t output_stride = channel_out * height_col * width_col;
 
   for (std::size_t i = 0; i < batch_size; ++i) {
-    std::unique_ptr<Storage> temp(
-        operator_matmul(new_filters.get(), cols_ptr + i * batch_col_stride));
-    thrust::copy(temp->data.begin(), temp->data.end(),
-                 outputs.begin() + i * output_stride);
+    auto cur_output_iter = outputs->data.begin() + i * output_stride;
+    auto cur_col_iter = cols->data.begin() + i * batch_col_stride;
+    thrust::device_vector<float> cur_cols_data(cur_col_iter,
+                                               cur_col_iter + batch_col_stride);
+    thrust::host_vector<std::size_t> cur_col_shape{
+        channel_in * kernel_h * kernel_w, height_col * width_col};
+    Storage cur_col(cur_col_shape, std::move(cur_cols_data));
+
+    std::unique_ptr<Storage> temp(operator_matmul(new_filters.get(), &cur_col));
+    thrust::copy(temp->data.begin(), temp->data.end(), cur_output_iter);
   }
-  return output;
+  return outputs;
 }
 
 // Y = F * im
@@ -65,16 +73,15 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
 Storage *operator_d_conv(const Storage *outputs_grad, const Storage *filters,
                          Storage *filters_grad) {
   Storage *inputs_grad = new Storage({});
+}
 
-                         }
-
-__global__ im2col_h(const std::size_t n, const float *data_im,
-                    const std::size_t height, const std::size_t width,
-                    const std::size_t kernel_h, const std::size_t kernel_w,
-                    const std::size_t pad_h, const std::size_t pad_w,
-                    const std::size_t stride_h, const std::size_t stride_w,
-                    const std::size_t height_col, const std::size_t width_col,
-                    float *data_col) {
+__global__ void im2col_h(const std::size_t n, const float *data_im,
+                         const std::size_t height, const std::size_t width,
+                         const std::size_t kernel_h, const std::size_t kernel_w,
+                         const std::size_t pad_h, const std::size_t pad_w,
+                         const std::size_t stride_h, const std::size_t stride_w,
+                         const std::size_t height_col,
+                         const std::size_t width_col, float *data_col) {
   CUDA_KERNEL_LOOP(index, n) {
     const std::size_t h_index = index / width_col;
     const std::size_t h_col = h_index % height_col;
@@ -112,11 +119,11 @@ void im2col(const float *data_im, const std::size_t channels,
   std::size_t height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   std::size_t width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
   std::size_t num_kernels = channels * height_col * width_col;
-  std::size_t grid_size = ceil((float)(num_kernels / BLOCK_SIZE);
+  std::size_t grid_size = ceil((float)(num_kernels / BLOCK_SIZE));
 
   im2col_h<<<grid_size, BLOCK_SIZE>>>(
-          num_kernels, data_im, height, width, kernel_h, kernel_w, pad_h, pad_w,
-          stride_h, stride_w, height_col, width_col, data_col);
+      num_kernels, data_im, height, width, kernel_h, kernel_w, pad_h, pad_w,
+      stride_h, stride_w, height_col, width_col, data_col);
   CUDA_POST_KERNEL_CHECK;
 }
 
@@ -137,10 +144,10 @@ __global__ void col2im_h(const std::size_t n, const float *data_col,
     // compute the start and end of the output
     const std::size_t w_col_start =
         (w_im < kernel_w) ? 0 : (w_im - kernel_w) / stride_w + 1;
-    const std::size_t w_col_end = min(w_im / stride_w + 1, width_col);
+    const std::size_t w_col_end = fminf(w_im / stride_w + 1, width_col);
     const std::size_t h_col_start =
         (h_im < kernel_h) ? 0 : (h_im - kernel_h) / stride_h + 1;
-    const std::size_t h_col_end = min(h_im / stride_h + 1, height_col);
+    const std::size_t h_col_end = fminf(h_im / stride_h + 1, height_col);
 
     for (std::size_t h_col = h_col_start; h_col < h_col_end; h_col += 1) {
       for (std::size_t w_col = w_col_start; w_col < w_col_end; w_col += 1) {

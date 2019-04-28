@@ -14,8 +14,9 @@ Storage *operator_d_linear(const Storage *outputs_grad, const Storage *inputs,
   // dL/dX = dL/dY * W^T
   // dL/dW = X^T * dL/dY
   Storage *inputs_grad = operator_matmul(outputs_grad, weights_transpose.get());
-  std::unique_ptr<Storage> w_grad(operator_matmul(inputs_transpose.get(), outputs_grad));
-  *weights_grad = std::move(*w_grad.get())
+  std::unique_ptr<Storage> w_grad(
+      operator_matmul(inputs_transpose.get(), outputs_grad));
+  *weights_grad = std::move(*w_grad.get());
 
   return inputs_grad;
 }
@@ -32,21 +33,20 @@ __global__ void operator_bias_h(const float *inputs, const float *bias,
 }
 
 Storage *operator_bias(const Storage *inputs, const Storage *bias) {
-  float *inputs_ptr = thrust::raw_pointer_cast(input1->data.data());
-  float *bias_ptr = thrust::raw_pointer_cast(bias->data.data());
+  const float *inputs_ptr = thrust::raw_pointer_cast(input1->data.data());
+  const float *bias_ptr = thrust::raw_pointer_cast(bias->data.data());
   Storage *output = new Storage(input1->shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
 
   std::size_t size = input1->data.size();
   std::size_t grid_size = ceil((float)(size) / BLOCK_SIZE);
-  operator_bias_h<<<grid_size, BLOCK_SIZE>>>(
-      inputs_ptr, bias_ptr, output_ptr, bias->data.size(), size);
+  operator_bias_h<<<grid_size, BLOCK_SIZE>>>(inputs_ptr, bias_ptr, output_ptr,
+                                             bias->data.size(), size);
 
   CUDA_POST_KERNEL_CHECK;
   return output;
 }
 
-Storage *operator_d_bias(const Storage *outputs_grad,
-                         const Storage *bias_grad) {
+Storage *operator_d_bias(const Storage *outputs_grad, Storage *bias_grad) {
   *bias_grad = *outputs_grad;
 }

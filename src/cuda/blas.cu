@@ -3,8 +3,8 @@
 
 #include <cuda_runtime.h>
 #include <device_functions.h>
-#include <thrust/transform.h>
 #include <thrust/functional.h>
+#include <thrust/transform.h>
 
 #include <cfloat>
 
@@ -116,7 +116,6 @@ Storage *operator_exp(const Storage *input1) {
 __global__ void operator_matmul_h(const float *input1, const float *input2,
                                   float *output, std::size_t height,
                                   std::size_t k, std::size_t width) {
-
   __shared__ float shared_input1[TILE_SIZE][TILE_SIZE];
   __shared__ float shared_input2[TILE_SIZE][TILE_SIZE];
 
@@ -151,8 +150,7 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
     __syncthreads();
   }
 
-  if (row < height && col < width)
-    output[row * height + col] = v;
+  if (row < height && col < width) output[row * height + col] = v;
 }
 
 Storage *operator_matmul(const Storage *input1, const Storage *input2) {
@@ -164,11 +162,11 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
     batch_size *= *i;
   }
 
-  float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
-  float *input2_ptr = thrust::raw_pointer_cast(input2->data.data());
+  const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
+  const float *input2_ptr = thrust::raw_pointer_cast(input2->data.data());
   thrust::host_vector<std::size_t> new_shape(input1->shape);
   new_shape.back() = width;
-  Storage *output = Storage(new_shape);
+  Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
 
   dim3 dim_block(TILE_SIZE, TILE_SIZE);
@@ -186,10 +184,8 @@ __global__ void operator_transpose_h(const float *input1, float *output,
   std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
-    std::size_t length = input1_shape[dim];
-
     std::size_t *loc = new std::size_t[input1_dims];
-    index2loc(index, temp_shape_ptr, input1_dims, loc);
+    index2loc(index, input1_shape, input1_dims, loc);
     swap(loc[dim0], loc[dim1]);
     std::size_t target_index = loc2index(loc, input1_shape, input1_dims);
     delete[] loc;
@@ -200,11 +196,11 @@ __global__ void operator_transpose_h(const float *input1, float *output,
 
 Storage *operator_transpose(const Storage *input1, std::size_t dim0,
                             std::size_t dim1) {
-  float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
-  std::size_t *input1_shape_ptr =
+  const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
+  const std::size_t *input1_shape_ptr =
       thrust::raw_pointer_cast(input1->shape.data());
 
-  std::host_vector<std::size_t> new_shape(input1->shape);
+  thrust::host_vector<std::size_t> new_shape(input1->shape);
   std::swap(new_shape[dim0], new_shape[dim1]);
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
@@ -226,7 +222,6 @@ __global__ void operator_mean_h(const float *input1, float *output,
                                 std::size_t input1_dims,
                                 std::size_t *output_shape, std::size_t dim,
                                 std::size_t dim_stride, std::size_t size) {
-
   std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
@@ -251,8 +246,8 @@ __global__ void operator_mean_h(const float *input1, float *output,
 }
 
 Storage *operator_mean(const Storage *input1, std::size_t dim) {
-  float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
-  std::size_t *input1_shape_ptr =
+  const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
+  const std::size_t *input1_shape_ptr =
       thrust::raw_pointer_cast(input1->shape.data());
 
   thrust::host_vector<std::size_t> new_shape(input1->shape);
@@ -264,11 +259,11 @@ Storage *operator_mean(const Storage *input1, std::size_t dim) {
 
   std::size_t input1_dims = input1->shape.size();
   std::size_t dim_stride = 1;
-  for (std::size_t i = dim + 1; i < input1_dims, i++) {
+  for (std::size_t i = dim + 1; i < input1_dims; i++) {
     dim_stride *= input1_shape_ptr[i];
   }
 
-  std::size_t size = output.data.size();
+  std::size_t size = output->data.size();
   std::size_t grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_mean_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, output_shape_ptr,
@@ -290,7 +285,7 @@ __global__ void operator_sum_h(const float *input1, float *output,
 
     std::size_t *loc = new std::size_t[input1_dims];
     index2loc(index, output_shape, input1_dims - 1, loc);
-    for (std::size_t i = input1_dims - 1; i > dim, i--) {
+    for (std::size_t i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
     }
     loc[dim] = 0;
@@ -307,8 +302,8 @@ __global__ void operator_sum_h(const float *input1, float *output,
 }
 
 Storage *operator_sum(const Storage *input1, std::size_t dim) {
-  float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
-  std::size_t *input1_shape_ptr =
+  const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
+  const std::size_t *input1_shape_ptr =
       thrust::raw_pointer_cast(input1->shape.data());
 
   thrust::host_vector<std::size_t> new_shape(input1->shape);
@@ -320,11 +315,11 @@ Storage *operator_sum(const Storage *input1, std::size_t dim) {
 
   std::size_t input1_dims = input1->shape.size();
   std::size_t dim_stride = 1;
-  for (std::size_t i = dim + 1; i < input1_dims, i++) {
+  for (std::size_t i = dim + 1; i < input1_dims; i++) {
     dim_stride *= input1_shape_ptr[i];
   }
 
-  std::size_t size = output.data.size();
+  std::size_t size = output->data.size();
   std::size_t grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_mean_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, output_shape_ptr,

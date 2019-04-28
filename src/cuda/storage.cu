@@ -1,7 +1,8 @@
 #include <storage.cuh>
 #include <utils.cuh>
 
-#include <curand.h>
+#include <curand_kernel.h>
+#include <device_launch_parameters.h>
 #include <thrust/reduce.h>
 
 #include <cmath>
@@ -14,19 +15,25 @@ Storage::Storage(thrust::host_vector<std::size_t> shape, float value = 0)
   this->data.resize(size, value);
 }
 
+Storage::Storage(std::initializer_list<std::size_t> shape, float value) {
+  this->shape = thrust::device_vector<std::size_t>(shape.begin(), shape.end());
+  std::size_t size =
+      thrust::reduce(this->shape.begin(), this->shape.end(), (std::size_t)1,
+                     thrust::multiplies<std::size_t>());
+  this->data.resize(size, value);
+}
+
 Storage::Storage(thrust::host_vector<std::size_t> shape,
                  thrust::device_vector<float> &&data)
     : shape(shape) {
-  std::size_t size = thrust::reduce(shape.begin(), shape.end(), (std::size_t)1,
-                                    thrust::multiplies<std::size_t>());
-  if (data.size() != size) {
-    throw "data size != shape";
-  }
-
+  std::size_t size =
+      thrust::reduce(this->shape.begin(), this->shape.end(), (std::size_t)1,
+                     thrust::multiplies<std::size_t>());
+  CHECK_EQ(size, data.size(), "Storage: error size");
   this->data = std::move(data);
 }
 
-__global__ storage_xavier(float *a, std::size_t size, float scale) {
+__global__ void storage_xavier(float *a, std::size_t size, float scale) {
   std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
   if (index < size) {
     curandState s;

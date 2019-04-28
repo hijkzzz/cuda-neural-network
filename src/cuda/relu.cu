@@ -2,7 +2,7 @@
 
 struct relu_functor {
   __host__ __device__ float operator()(const float &x) const {
-    return std::max(0, x);
+    return fmaxf(0, x);
   }
 };
 
@@ -29,5 +29,5 @@ Storage *operator_d_relu(const Storage *input1, const Storage *outputs_grad) {
   thrust::transform(input1->data.begin(), input1->data.end(),
                     d_relu->data.begin(), f);
 
-  return operator_mul(d_relu, outputs_grad)
+  return operator_mul(d_relu, outputs_grad);
 }

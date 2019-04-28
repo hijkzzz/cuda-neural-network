@@ -45,7 +45,7 @@ void rmsprop_update(Storage *square_grads, Storage *weights,
 
   thrust::device_vector<float> new_weights(weights->data.size());
   thrust::transform(weights->data.begin(), weights->data.end(),
-                    new_grads->begin(), new_weights.begin(),
+                    new_grads.begin(), new_weights.begin(),
                     thrust::minus<float>());
   weights->data = std::move(new_weights);
 }
