@@ -10,21 +10,21 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 # find pybind11
-add_subdirectory(./src/pybind11)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/pybind11)
 include_directories(${PYBIND11_INCLUDE_DIR})
 if(CMAKE_COMPILER_IS_GNUCXX)
 	set(PYBIND11_CPP_STANDARD "-std=c++14")
 endif()
 
 # add source
-file(GLOB HEADERS ./src/cuda/*.cuh)
-file(GLOB SOURCES ./src/cuda/*.cu)
-file(GLOB PYBIND11_SOURCES ./src/python/*.cpp)
+file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/*.cuh)
+file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/*.cu)
+file(GLOB PYBIND11_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/python/*.cpp)
 
 source_group("Include" FILES ${HEADERS})
 source_group("Source" FILES ${SOURCES} ${PYBIND11_SOURCES})
 
-include_directories(./src/cuda)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/cuda)
 
 # add cuda library
 cuda_add_library(cu STATIC ${SOURCES})
@@ -41,9 +41,7 @@ endif()
 
 # unit test
 if(UNIT_TEST)
-	# storage
-	add_executable(storage_test ./test/cuda/storage_test.cu)
+	# test storage
+	add_executable(storage_test ${CMAKE_CURRENT_SOURCE_DIR}/test/cuda/storage_test.cu)
     target_link_libraries(storage_test cu)
-    
-    #
 endif()
