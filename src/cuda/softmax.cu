@@ -57,6 +57,8 @@ Storage *operator_log_softmax(const Storage *input1, unsigned int dim) {
   operator_log_softmax_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
       dim dim_stride, size);
+
+  CUDA_POST_KERNEL_CHECK;
 }
 
 __global__ void operator_d_log_softmax_h(
@@ -129,4 +131,6 @@ Storage *operator_d_log_softmax(const Storage *input1, unsigned int dim,
   operator_d_log_softmax_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_grads_ptr, input1_shape_ptr, temp_shape_ptr,
       input1_dims, dim, dim_stride, size, input1_grads_ptr);
+
+  CUDA_POST_KERNEL_CHECK;
 }
