@@ -1,17 +1,19 @@
 #include <conv.cuh>
 
+#include <math_functions.h>
 #include <thrust/copy.h>
 #include <thrust/host_vector.h>
-#include <math_functions.h>
 
 #include <cstdlib>
 #include <memory>
+#include <vector>
 
 // inputs: N*C*H*W
 // filters: C_out*C_in*K_h*K_w
 Storage *operator_conv(const Storage *inputs, const Storage *filters,
                        const unsigned int pad_h, const unsigned int pad_w,
-                       const unsigned int stride_h, const unsigned int stride_w) {
+                       const unsigned int stride_h,
+                       const unsigned int stride_w) {
   unsigned int width = *inputs->shape.rbegin();
   unsigned int height = *(inputs->shape.rbegin() + 1);
   unsigned int channel_in = *(inputs->shape.rbegin() + 2);
@@ -46,8 +48,7 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
   // Y = F * im
   // [C_out*(C_in*k_h*k_w)] * [(C_in*k_h*k_w)*(height_col*width_col)]
   std::unique_ptr<Storage> new_filters(new Storage(*filters));
-  new_filters->shape = thrust::device_vector<unsigned int>{
-      channel_out, channel_in * kernel_h * kernel_w};
+  new_filters->reshape({channel_out, channel_in * kernel_h * kernel_w});
 
   // [batch_size * channel_out * (height_col * width_col)]
   Storage *outputs =
@@ -69,19 +70,90 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
   return outputs;
 }
 
-// Y = F * im
-// dL/dF = dL/dY * im^T
-// dL/d_im = F^T * dL/dY
-Storage *operator_d_conv(const Storage *outputs_grad, const Storage *filters,
-                         Storage *filters_grad) {
-  Storage *inputs_grad = new Storage({});
+// Y = F * col
+// dL/d_col = F^T * dL/dY
+// dL/d_im = col2im(dL/d_col)
+// dL/dF = dL/dY * col^T
+Storage *operator_d_conv(const Storage *outputs_grad, const Storage *inputs,
+                         const Storage *cols, const Storage *filters,
+                         const unsigned int pad_h, const unsigned int pad_w,
+                         const unsigned int stride_h,
+                         const unsigned int stride_w, Storage *filters_grad) {
+  Storage *inputs_grad = new Storage(inputs->shape);
+
+  unsigned int width = *inputs->shape.rbegin();
+  unsigned int height = *(inputs->shape.rbegin() + 1);
+  unsigned int channel_in = *(inputs->shape.rbegin() + 2);
+  unsigned int batch_size = *(inputs->shape.rbegin() + 3);
+
+  unsigned int kernel_w = *filters->shape.rbegin();
+  unsigned int kernel_h = *(filters->shape.rbegin() + 1);
+  unsigned int channel_out = *(filters->shape.rbegin() + 3);
+
+  unsigned int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+  unsigned int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+
+  // F^T
+  std::unique_ptr<Storage> filters1(new Storage(*filters));
+  filters1->reshape({channel_out, channel_in * kernel_h * kernel_w});
+  std::unique_ptr<Storage> filters_t(operator_transpose(filters1.get(), 0, 1));
+  filters1.reset();
+
+  // filters grad
+  filters_grad->reshape(
+      {batch_size, channel_out, channel_in, kernel_h, kernel_w});
+  filters_grad->data.resize(batch_size * channel_out * channel_in * kernel_h *
+                            kernel_w);
+
+  // stride
+  unsigned int batch_im_stride = channel_in * height * width;
+  unsigned int batch_col_stride =
+      channel_in * kernel_h * kernel_w * height_col * width_col;
+
+  unsigned int batch_inputs_grad_stride = channel_in * height_col * width_col;
+  unsigned int batch_filters_grad_stride =
+      channel_out * channel_in * kernel_h * kernel_w;
+  unsigned int batch_outputs_grad_stride = channel_in * height_col * width_col;
+
+  for (unsigned int i = 0; i < batch_size; ++i) {
+    std::unique_ptr<Storage> dl_dy(
+        new Storage({channel_out, height_col * width_col},
+                    outputs_grad->data.begin() + i * batch_outputs_grad_stride,
+                    outputs_grad->data.begin() + i * batch_outputs_grad_stride +
+                        batch_outputs_grad_stride));
+    // dL/d_col = F^T * dL/dY
+    std::unique_ptr<Storage> dl_dcol(
+        operator_matmul(filters_t.get(), dl_dy.get()));
+    // dL/d_im = col2im(dL/d_col)
+    std::unique_ptr<Storage> dl_dim(new Storage({channel_in, height, width}));
+    const float *dl_dcol_ptr = thrust::raw_pointer_cast(dl_dcol->data.data());
+    float *dl_dim_ptr = thrust::raw_pointer_cast(dl_dim->data.data());
+    col2im(dl_dcol_ptr, channel_in, height, width, kernel_h, kernel_w, pad_h,
+           pad_w, stride_h, stride_w, dl_dim_ptr);
+    thrust::copy(dl_dim->data.begin(), dl_dim->data.end(),
+                 inputs_grad->data.begin() + i * batch_inputs_grad_stride);
+
+    // dL/dF = dL/dY * col^T
+    std::unique_ptr<Storage> col(new Storage(
+        {channel_in * height * width, height_col * width_col},
+        cols->data.begin() + i * batch_col_stride,
+        cols->data.begin() + i * batch_col_stride + batch_col_stride));
+    std::unique_ptr<Storage> col_t(operator_transpose(col.get(), 0, 1));
+    col.release();
+    std::unique_ptr<Storage> dl_df(operator_matmul(dl_dy.get(), col_t.get()));
+    thrust::copy(dl_df->data.begin(), dl_df->data.end(),
+                 filters_grad->data.begin() + i * batch_filters_grad_stride);
+  }
+
+  return inputs_grad;
 }
 
 __global__ void im2col_h(const unsigned int n, const float *data_im,
                          const unsigned int height, const unsigned int width,
-                         const unsigned int kernel_h, const unsigned int kernel_w,
-                         const unsigned int pad_h, const unsigned int pad_w,
-                         const unsigned int stride_h, const unsigned int stride_w,
+                         const unsigned int kernel_h,
+                         const unsigned int kernel_w, const unsigned int pad_h,
+                         const unsigned int pad_w, const unsigned int stride_h,
+                         const unsigned int stride_w,
                          const unsigned int height_col,
                          const unsigned int width_col, float *data_col) {
   CUDA_KERNEL_LOOP(index, n) {
@@ -131,7 +203,8 @@ void im2col(const float *data_im, const unsigned int channels,
 
 __global__ void col2im_h(const unsigned int n, const float *data_col,
                          const unsigned int height, const unsigned int width,
-                         const unsigned int channels, const unsigned int kernel_h,
+                         const unsigned int channels,
+                         const unsigned int kernel_h,
                          const unsigned int kernel_w, const unsigned int pad_h,
                          const unsigned int pad_w, const unsigned int stride_h,
                          const unsigned int stride_w,

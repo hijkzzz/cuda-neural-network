@@ -133,4 +133,5 @@ Storage *operator_d_log_softmax(const Storage *input1, unsigned int dim,
       input1_dims, dim, dim_stride, size, input1_grads_ptr);
 
   CUDA_POST_KERNEL_CHECK;
+  return input1_grads;
 }
