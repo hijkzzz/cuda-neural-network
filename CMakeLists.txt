@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.8)
 project(neural_network CXX CUDA)
 
 # find cuda
@@ -7,13 +7,6 @@ include_directories(${CUDA_INCLUDE_DIRS})
 list(APPEND CMAKE_CUDA_FLAGS "-gencode arch=compute_61,code=sm_61")
 if(CMAKE_COMPILER_IS_GNUCXX)
 	list(APPEND CMAKE_CUDA_FLAGS "-std=c++14")
-endif()
-
-# find pybind11
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/pybind11)
-include_directories(${PYBIND11_INCLUDE_DIR})
-if(CMAKE_COMPILER_IS_GNUCXX)
-	set(PYBIND11_CPP_STANDARD "-std=c++14")
 endif()
 
 # add source
@@ -35,13 +28,22 @@ option(UNIT_TEST "unit test" ON)
 
 # wrap library
 if(WRAP_LIB)
+    # find pybind11
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_parts/pybind11)
+    include_directories(${PYBIND11_INCLUDE_DIR})
+    if(CMAKE_COMPILER_IS_GNUCXX)
+	    set(PYBIND11_CPP_STANDARD "-std=c++14")
+    endif()
+
 	pybind11_add_module(neural_network MODULE ${PYBIND11_SOURCES})
 	target_link_libraries(neural_network cu)
 endif()
 
 # unit test
 if(UNIT_TEST)
-	# test storage
-	add_executable(storage_test ${CMAKE_CURRENT_SOURCE_DIR}/test/cuda/storage_test.cu)
-    target_link_libraries(storage_test cu)
+    # find google test
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_parts/googletest)
+    include_directories("${gtest_SOURCE_DIR}/include")
+
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test/cuda)
 endif()
