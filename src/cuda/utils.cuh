@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include <cuda_runtime.h>
-#include <iostream>
+#include <thrust/device_vector.h>
 
 #define BLOCK_SIZE 256
 #define TILE_SIZE 16
@@ -24,7 +24,7 @@
 #define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
 
 template <class T>
-inline __device__ void swap(T &a, T &b) {
+__device__ void swap(T &a, T &b) {
   T temp = a;
   a = b;
   b = temp;
@@ -47,3 +47,7 @@ inline __device__ int loc2index(const int *loc, const int *shape, int dims) {
   }
   return index;
 }
+
+// explicit instantiation
+template __device__ void swap<int>(int &a, int &b);
+template __device__ void swap<float>(float &a, float &b);

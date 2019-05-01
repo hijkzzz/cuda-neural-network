@@ -165,7 +165,7 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
 
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const float *input2_ptr = thrust::raw_pointer_cast(input2->data.data());
-  thrust::host_vector<int> new_shape(input1->shape);
+  thrust::device_vector<int> new_shape(input1->shape);
   new_shape.back() = width;
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
@@ -201,7 +201,7 @@ Storage *operator_transpose(const Storage *input1, int dim0, int dim1) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
 
-  thrust::host_vector<int> new_shape(input1->shape);
+  thrust::device_vector<int> new_shape(input1->shape);
   std::swap(new_shape[dim0], new_shape[dim1]);
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
@@ -248,7 +248,7 @@ Storage *operator_mean(const Storage *input1, int dim) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
 
-  thrust::host_vector<int> new_shape(input1->shape);
+  thrust::device_vector<int> new_shape(input1->shape);
   new_shape.erase(new_shape.begin() + dim);
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
@@ -301,7 +301,7 @@ Storage *operator_sum(const Storage *input1, int dim) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
 
-  thrust::host_vector<int> new_shape(input1->shape);
+  thrust::device_vector<int> new_shape(input1->shape);
   new_shape.erase(new_shape.begin() + dim);
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());

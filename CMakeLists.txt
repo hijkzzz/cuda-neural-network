@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required (VERSION 3.8)
 project(neural_network LANGUAGES CUDA CXX)
 
 if (MSVC)
@@ -14,14 +14,14 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 # add source
-file(GLOB HEADERS ./src/cuda/*.cuh)
-file(GLOB SOURCES ./src/cuda/*.cu)
-file(GLOB PYBIND11_SOURCES ./src/python/*.cpp)
+file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/*.cuh)
+file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/*.cu)
+file(GLOB PYBIND11_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/python/*.cpp)
 
 source_group("Include" FILES ${HEADERS})
 source_group("Source" FILES ${SOURCES} ${PYBIND11_SOURCES})
 
-include_directories(./src/cuda)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/cuda)
 
 # add cuda library
 add_library(cu STATIC ${SOURCES})
@@ -34,19 +34,23 @@ option(UNIT_TEST "unit test" ON)
 # wrap library
 if(WRAP_LIB)
     # find pybind11
-    add_subdirectory(./third_parts/pybind11)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_parts/pybind11)
     include_directories(${PYBIND11_INCLUDE_DIR})
     if(CMAKE_COMPILER_IS_GNUCXX)
 	    set(PYBIND11_CPP_STANDARD "-std=c++14")
     endif()
 
-	pybind11_add_module(neural_network MODULE ${PYBIND11_SOURCES})
+	pybind11_add_module(neural_network SHARED ${PYBIND11_SOURCES})
 	target_link_libraries(neural_network cu)
 endif()
 
 # unit test
 if(UNIT_TEST)
     # find google test
-    add_subdirectory(./third_parts/googletest)
-    add_subdirectory(./test/cuda)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_parts/googletest)
+
+    file(GLOB TEST_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/test/cuda/*.cpp)
+    add_executable(unit_tests ${TEST_SRCS})
+    target_link_libraries(unit_tests cu gtest gtest_main)
+    add_test(NAME unit_tests COMMAND unit_tests)
 endif()

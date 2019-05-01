@@ -2,7 +2,6 @@
 
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 
 #include <initializer_list>
 #include <iterator>
@@ -10,8 +9,8 @@
 class Storage {
  public:
   explicit Storage(std::initializer_list<int> shape, float value = 0);
-  explicit Storage(thrust::host_vector<int> shape, float value = 0);
-  explicit Storage(thrust::host_vector<int> shape,
+  explicit Storage(thrust::device_vector<int> shape, float value = 0);
+  explicit Storage(thrust::device_vector<int> shape,
                    thrust::device_vector<float> &&data);
   explicit Storage(std::initializer_list<int> shape,
                    thrust::device_vector<float>::const_iterator begin,

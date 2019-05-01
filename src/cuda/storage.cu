@@ -16,7 +16,7 @@ Storage::Storage(std::initializer_list<int> shape, float value)
   this->data.resize(size, value);
 }
 
-Storage::Storage(thrust::host_vector<int> shape, float value)
+Storage::Storage(thrust::device_vector<int> shape, float value)
     : shape(shape) {
   int size =
       thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
@@ -24,7 +24,7 @@ Storage::Storage(thrust::host_vector<int> shape, float value)
   this->data.resize(size, value);
 }
 
-Storage::Storage(thrust::host_vector<int> shape,
+Storage::Storage(thrust::device_vector<int> shape,
                  thrust::device_vector<float> &&data)
     : shape(shape) {
   this->data = std::move(data);
