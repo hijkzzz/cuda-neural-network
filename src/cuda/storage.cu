@@ -1,4 +1,4 @@
-﻿#include <storage.cuh>
+#include <storage.cuh>
 #include <utils.cuh>
 
 #include <curand_kernel.h>
@@ -8,7 +8,7 @@
 #include <cmath>
 #include <exception>
 
-Storage::Storage(std::initializer_list<int> shape, float value)
+Storage::Storage(std::vector<int> shape, float value)
     : shape(shape.begin(), shape.end()) {
   int size =
       thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
@@ -31,7 +31,7 @@ Storage::Storage(thrust::device_vector<int> shape,
   this->check_size();
 }
 
-Storage::Storage(std::initializer_list<int> shape,
+Storage::Storage(std::vector<int> shape,
                  thrust::device_vector<float>::const_iterator begin,
                  thrust::device_vector<float>::const_iterator end)
     : shape(shape.begin(), shape.end()), data(begin, end) {
@@ -45,7 +45,7 @@ void Storage::check_size() {
   CHECK_EQ(size, this->data.size(), "storage error size");
 }
 
-void Storage::reshape(std::initializer_list<int> shape) {
+void Storage::reshape(std::vector<int> shape) {
   this->shape.assign(shape.begin(), shape.end());
   this->check_size();
 }
