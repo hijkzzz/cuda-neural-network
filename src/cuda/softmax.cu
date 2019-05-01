@@ -1,4 +1,4 @@
-#include <softmax.cuh>
+﻿#include <softmax.cuh>
 
 __global__ void operator_log_softmax_h(const float *input1, float *output,
                                        const int *input1_shape, int input1_dims,
@@ -18,7 +18,7 @@ __global__ void operator_log_softmax_h(const float *input1, float *output,
     int base = loc2index(loc, input1_shape, input1_dims);
     delete[] loc;
 
-    float max_ = -FLT_MIN;
+    float max_ = -FLT_MAX;
     for (int i = 0; i < length; ++i) {
       max_ = fmaxf(max_, input1[base + i * dim_stride]);
     }
@@ -81,7 +81,7 @@ __global__ void operator_d_log_softmax_h(const float *input1,
     int base = loc2index(loc, input1_shape, input1_dims);
     delete[] loc;
 
-    float max_ = -FLT_MIN;
+    float max_ = -FLT_MAX;
     for (int i = 0; i < length; ++i) {
       max_ = fmaxf(max_, input1[base + i * dim_stride]);
     }
@@ -92,11 +92,13 @@ __global__ void operator_d_log_softmax_h(const float *input1,
     }
     logsum = max_ + logf(logsum);
 
+    // sum(dL/dY) = dL/dY * 1_n
     double dldysum = 0;
     for (int i = 0; i < length; ++i) {
       dldysum += output_grads[base + i * dim_stride];
     }
 
+    // dL/dY - sum(dL/dY) * exp(x) / sum(exp(x))
     for (int i = 0; i < length; ++i) {
       float x = input1[base + i * dim_stride];
       input1_grads[base + i * dim_stride] =

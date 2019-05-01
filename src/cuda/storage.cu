@@ -1,4 +1,4 @@
-#include <storage.cuh>
+﻿#include <storage.cuh>
 #include <utils.cuh>
 
 #include <curand_kernel.h>
@@ -42,10 +42,10 @@ void Storage::check_size() {
   int size =
       thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
                      thrust::multiplies<int>());
-  CHECK_EQ(size, this->data.size(), "error size");
+  CHECK_EQ(size, this->data.size(), "storage error size");
 }
 
-void Storage::reshape(std::vector<int> shape) {
+void Storage::reshape(std::initializer_list<int> shape) {
   this->shape.assign(shape.begin(), shape.end());
   this->check_size();
 }

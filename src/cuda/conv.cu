@@ -1,4 +1,4 @@
-#include <conv.cuh>
+﻿#include <conv.cuh>
 
 #include <thrust/copy.h>
 #include <thrust/host_vector.h>
@@ -10,8 +10,8 @@
 // inputs: N*C*H*W
 // filters: C_out*C_in*K_h*K_w
 Storage *operator_conv(const Storage *inputs, const Storage *filters,
-                       const int pad_h, const int pad_w, const int stride_h,
-                       const int stride_w) {
+                       Storage *cols, const int pad_h, const int pad_w,
+                       const int stride_h, const int stride_w) {
   int width = *(inputs->shape.rbegin());
   int height = *(inputs->shape.rbegin() + 1);
   int channel_in = *(inputs->shape.rbegin() + 2);
@@ -30,8 +30,8 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
 
   // im2col
   // [batch_size*(C_in*k_h*k_w)*(height_col * width_col)]
-  std::unique_ptr<Storage> cols(new Storage(
-      {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col}));
+  cols->reshape(
+      {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col});
 
   const float *inputs_ptr = thrust::raw_pointer_cast(inputs->data.data());
   const float *filters_ptr = thrust::raw_pointer_cast(filters->data.data());
@@ -43,7 +43,7 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
   }
 
   // matmul
-  // Y = F * im
+  // Y = F * col
   // [C_out*(C_in*k_h*k_w)] * [(C_in*k_h*k_w)*(height_col*width_col)]
   std::unique_ptr<Storage> new_filters(new Storage(*filters));
   new_filters->reshape({channel_out, channel_in * kernel_h * kernel_w});
@@ -56,13 +56,12 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
   for (int i = 0; i < batch_size; ++i) {
     auto cur_output_iter = outputs->data.begin() + i * output_stride;
     auto cur_col_iter = cols->data.begin() + i * batch_col_stride;
-    thrust::device_vector<float> cur_cols_data(cur_col_iter,
-                                               cur_col_iter + batch_col_stride);
-    thrust::host_vector<int> cur_col_shape{channel_in * kernel_h * kernel_w,
-                                           height_col * width_col};
-    Storage cur_col(cur_col_shape, std::move(cur_cols_data));
+    std::unique_ptr<Storage> cur_col(
+        new Storage({channel_in * kernel_h * kernel_w, height_col * width_col},
+                    cur_col_iter, cur_col_iter + batch_col_stride));
 
-    std::unique_ptr<Storage> temp(operator_matmul(new_filters.get(), &cur_col));
+    std::unique_ptr<Storage> temp(
+        operator_matmul(new_filters.get(), cur_col.get()));
     thrust::copy(temp->data.begin(), temp->data.end(), cur_output_iter);
   }
   return outputs;
@@ -97,27 +96,26 @@ Storage *operator_d_conv(const Storage *outputs_grad, const Storage *inputs,
   filters1.reset();
 
   // filters grad
-  filters_grad->reshape(
-      {batch_size, channel_out, channel_in, kernel_h, kernel_w});
   filters_grad->data.resize(batch_size * channel_out * channel_in * kernel_h *
                             kernel_w);
+  filters_grad->reshape(
+      {batch_size, channel_out, channel_in, kernel_h, kernel_w});
 
   // stride
   // int batch_im_stride = channel_in * height * width;
   int batch_col_stride =
       channel_in * kernel_h * kernel_w * height_col * width_col;
 
-  int batch_inputs_grad_stride = channel_in * height_col * width_col;
+  int batch_inputs_grad_stride = channel_in * height * width;
   int batch_filters_grad_stride =
       channel_out * channel_in * kernel_h * kernel_w;
-  int batch_outputs_grad_stride = channel_in * height_col * width_col;
+  int batch_outputs_grad_stride = channel_out * height_col * width_col;
 
   for (int i = 0; i < batch_size; ++i) {
-    std::unique_ptr<Storage> dl_dy(
-        new Storage({channel_out, height_col * width_col},
-                    outputs_grad->data.begin() + i * batch_outputs_grad_stride,
-                    outputs_grad->data.begin() + i * batch_outputs_grad_stride +
-                        batch_outputs_grad_stride));
+    std::unique_ptr<Storage> dl_dy(new Storage(
+        {channel_out, height_col * width_col},
+        outputs_grad->data.begin() + i * batch_outputs_grad_stride,
+        outputs_grad->data.begin() + (i + 1) * batch_outputs_grad_stride));
     // dL/d_col = F^T * dL/dY
     std::unique_ptr<Storage> dl_dcol(
         operator_matmul(filters_t.get(), dl_dy.get()));
@@ -131,10 +129,10 @@ Storage *operator_d_conv(const Storage *outputs_grad, const Storage *inputs,
                  inputs_grad->data.begin() + i * batch_inputs_grad_stride);
 
     // dL/dF = dL/dY * col^T
-    std::unique_ptr<Storage> col(new Storage(
-        {channel_in * height * width, height_col * width_col},
-        cols->data.begin() + i * batch_col_stride,
-        cols->data.begin() + i * batch_col_stride + batch_col_stride));
+    std::unique_ptr<Storage> col(
+        new Storage({channel_in * height * width, height_col * width_col},
+                    cols->data.begin() + i * batch_col_stride,
+                    cols->data.begin() + (i + 1) * batch_col_stride));
     std::unique_ptr<Storage> col_t(operator_transpose(col.get(), 0, 1));
     col.release();
     std::unique_ptr<Storage> dl_df(operator_matmul(dl_dy.get(), col_t.get()));

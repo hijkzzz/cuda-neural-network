@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
@@ -19,7 +19,7 @@ class Storage {
 
   void check_size();
 
-  void reshape(std::vector<int> shape);
+  void reshape(std::initializer_list<int> shape);
   void xavier(size_t in_size, size_t out_size);
 
   // data

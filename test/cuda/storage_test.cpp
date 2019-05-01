@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include <storage.cuh>
 #include <iostream>
 
@@ -9,7 +9,7 @@ TEST(StorageTest, constructor) {
     ASSERT_EQ(a.data[i], 1);
   }
 
-  thrust::host_vector<unsigned int> shape(3, 3);
+  thrust::host_vector<int> shape(3, 3);
   thrust::device_vector<float> data(3 * 3 * 3, 2);
   Storage b(shape, std::move(data));
   ASSERT_EQ(data.size(), 0);

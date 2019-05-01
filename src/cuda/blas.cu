@@ -1,4 +1,4 @@
-#include <blas.cuh>
+﻿#include <blas.cuh>
 #include <utils.cuh>
 
 #include <cuda_runtime.h>
@@ -156,6 +156,8 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
   int height = *(input1->shape.rbegin() + 1);
   int k = *(input1->shape.rbegin());
   int width = *(input2->shape.rbegin());
+  CHECK_EQ(k, *(input2->shape.rbegin() + 1), "matmul shape error");
+
   int batch_size = 1;
   for (auto i = input1->shape.rbegin() + 2; i < input1->shape.rend(); i++) {
     batch_size *= *i;

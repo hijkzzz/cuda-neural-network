@@ -24,7 +24,8 @@ source_group("Source" FILES ${SOURCES} ${PYBIND11_SOURCES})
 include_directories(./src/cuda)
 
 # add cuda library
-cuda_add_library(cu STATIC ${SOURCES})
+add_library(cu STATIC ${SOURCES})
+target_link_libraries(cu ${CUDA_LIBRARIES} ${CUDA_curand_LIBRARY})
 
 # option
 option(WRAP_LIB "wrap library" OFF)
