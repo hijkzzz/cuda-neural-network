@@ -30,19 +30,17 @@ inline __device__ void swap(T &a, T &b) {
   b = temp;
 }
 
-__device__ void index2loc(unsigned int index, const unsigned int *shape,
-                          unsigned int dims, unsigned int *loc) {
+inline __device__ void index2loc(int index, const int *shape, int dims,
+                                 int *loc) {
   for (int i = dims - 1; i >= 0; i--) {
     loc[i] = index % shape[i];
     index /= shape[i];
   }
 }
 
-__device__ unsigned int loc2index(const unsigned int *loc,
-                                  const unsigned int *shape,
-                                  unsigned int dims) {
-  unsigned int index = 0;
-  unsigned int base = 1;
+inline __device__ int loc2index(const int *loc, const int *shape, int dims) {
+  int index = 0;
+  int base = 1;
   for (int i = dims - 1; i >= 0; i--) {
     index += base * loc[i];
     base *= shape[i];

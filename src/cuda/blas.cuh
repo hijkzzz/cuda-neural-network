@@ -24,9 +24,8 @@ Storage *operator_pow(const Storage *input1, float e);
 
 Storage *operator_matmul(const Storage *input1, const Storage *input2);
 
-Storage *operator_transpose(const Storage *input1, unsigned int dim0,
-                            unsigned int dim1);
+Storage *operator_transpose(const Storage *input1, int dim0, int dim1);
 
-Storage *operator_mean(const Storage *input1, unsigned int dim);
+Storage *operator_mean(const Storage *input1, int dim);
 
-Storage *operator_sum(const Storage *input1, unsigned int dim);
+Storage *operator_sum(const Storage *input1, int dim);

@@ -23,7 +23,7 @@ struct sigmoid_d_functor {
 };
 
 // Y = sigmoid(X)
-// dL/dX = sigmoid'(X) element_mul dL/dY  
+// dL/dX = sigmoid'(X) element_mul dL/dY
 Storage *operator_d_sigmoid(const Storage *input1,
                             const Storage *outputs_grad) {
   Storage *d_sigmoid = new Storage(input1->shape);

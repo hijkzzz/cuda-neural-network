@@ -8,45 +8,50 @@
 #include <cmath>
 #include <exception>
 
-Storage::Storage(std::vector<unsigned int> shape, float value)
-    : shape(shape) {
-  unsigned int size =
-      thrust::reduce(this->shape.begin(), this->shape.end(), (unsigned int)1,
-                     thrust::multiplies<unsigned int>());
+Storage::Storage(std::initializer_list<int> shape, float value)
+    : shape(shape.begin(), shape.end()) {
+  int size =
+      thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
+                     thrust::multiplies<int>());
   this->data.resize(size, value);
 }
 
-Storage::Storage(thrust::host_vector<unsigned int> shape, float value)
+Storage::Storage(thrust::host_vector<int> shape, float value)
     : shape(shape) {
-  unsigned int size =
-      thrust::reduce(this->shape.begin(), this->shape.end(), (unsigned int)1,
-                     thrust::multiplies<unsigned int>());
+  int size =
+      thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
+                     thrust::multiplies<int>());
   this->data.resize(size, value);
 }
 
-Storage::Storage(thrust::host_vector<unsigned int> shape,
+Storage::Storage(thrust::host_vector<int> shape,
                  thrust::device_vector<float> &&data)
     : shape(shape) {
   this->data = std::move(data);
   this->check_size();
 }
 
-Storage::Storage(std::vector<unsigned int> shape,
-                 thrust::device_vector<unsigned int>::const_iterator begin,
-                 thrust::device_vector<unsigned int>::const_iterator end)
-    : shape(shape), data(begin, end) {
+Storage::Storage(std::initializer_list<int> shape,
+                 thrust::device_vector<float>::const_iterator begin,
+                 thrust::device_vector<float>::const_iterator end)
+    : shape(shape.begin(), shape.end()), data(begin, end) {
   this->check_size();
 }
 
 void Storage::check_size() {
-  unsigned int size =
-      thrust::reduce(this->shape.begin(), this->shape.end(), (unsigned int)1,
-                     thrust::multiplies<unsigned int>());
+  int size =
+      thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
+                     thrust::multiplies<int>());
   CHECK_EQ(size, this->data.size(), "error size");
 }
 
-__global__ void storage_xavier(float *a, unsigned int size, float scale) {
-  unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
+void Storage::reshape(std::vector<int> shape) {
+  this->shape.assign(shape.begin(), shape.end());
+  this->check_size();
+}
+
+__global__ void storage_xavier(float *a, int size, float scale) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
   if (index < size) {
     curandState s;
     curand_init(1234, index, 0, &s);
@@ -54,17 +59,13 @@ __global__ void storage_xavier(float *a, unsigned int size, float scale) {
   }
 }
 
-void Storage::reshape(std::vector<unsigned int> shape) {
-  this->shape.assign(shape.begin(), shape.end());
-  this->check_size();
-}
-
 void Storage::xavier(size_t in_size, size_t out_size) {
   float *a_ptr = thrust::raw_pointer_cast(this->data.data());
-  unsigned int size = this->data.size();
-  unsigned int block_size = ceil((float)(size) / BLOCK_SIZE);
+  int size = this->data.size();
+  int grid_size = ceil((float)(size) / BLOCK_SIZE);
+
   float scale = std::sqrt((double)6) / std::sqrt((float)(in_size) + out_size);
-  storage_xavier<<<block_size, BLOCK_SIZE>>>(a_ptr, size, scale);
+  storage_xavier<<<grid_size, BLOCK_SIZE>>>(a_ptr, size, scale);
 
   CUDA_POST_KERNEL_CHECK;
 }

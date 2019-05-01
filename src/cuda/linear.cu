@@ -22,12 +22,11 @@ Storage *operator_d_linear(const Storage *outputs_grad, const Storage *inputs,
 }
 
 __global__ void operator_bias_h(const float *inputs, const float *bias,
-                                float *output, unsigned int width,
-                                unsigned int size) {
-  unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
+                                float *output, int width, int size) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
-    unsigned int col = index % width;
+    int col = index % width;
     output[index] = inputs[index] + bias[col];
   }
 }
@@ -38,8 +37,8 @@ Storage *operator_bias(const Storage *inputs, const Storage *bias) {
   Storage *output = new Storage(inputs->shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
 
-  unsigned int size = inputs->data.size();
-  unsigned int grid_size = ceil((float)(size) / BLOCK_SIZE);
+  int size = inputs->data.size();
+  int grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_bias_h<<<grid_size, BLOCK_SIZE>>>(inputs_ptr, bias_ptr, output_ptr,
                                              bias->data.size(), size);
 
