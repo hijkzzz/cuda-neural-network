@@ -8,7 +8,7 @@
 #include <cmath>
 #include <exception>
 
-Storage::Storage(std::vector<unsigned int> shape, float value = 0)
+Storage::Storage(std::vector<unsigned int> shape, float value)
     : shape(shape) {
   unsigned int size =
       thrust::reduce(this->shape.begin(), this->shape.end(), (unsigned int)1,
@@ -16,7 +16,7 @@ Storage::Storage(std::vector<unsigned int> shape, float value = 0)
   this->data.resize(size, value);
 }
 
-Storage::Storage(thrust::host_vector<unsigned int> shape, float value = 0)
+Storage::Storage(thrust::host_vector<unsigned int> shape, float value)
     : shape(shape) {
   unsigned int size =
       thrust::reduce(this->shape.begin(), this->shape.end(), (unsigned int)1,

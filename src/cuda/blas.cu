@@ -154,9 +154,9 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
 }
 
 Storage *operator_matmul(const Storage *input1, const Storage *input2) {
-  unsigned int height = *(input1->shape.rbegin + 1);
-  unsigned int k = input1->shape.back();
-  unsigned int width = input2->shape.back();
+  unsigned int height = *(input1->shape.rbegin() + 1);
+  unsigned int k = *(input1->shape.rbegin());
+  unsigned int width = *(input2->shape.rbegin());
   unsigned int batch_size = 1;
   for (auto i = input1->shape.rbegin() + 2; i < input1->shape.rend(); i++) {
     batch_size *= *i;
@@ -170,16 +170,16 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
 
   dim3 dim_block(TILE_SIZE, TILE_SIZE);
-  dim3 dim_grid(batch_size, ceil((float)(height / TILE_SIZE)), ceil((float)(width / TILE_SIZE));
+  dim3 dim_grid(batch_size, ceil((float)height / TILE_SIZE), ceil((float)width / TILE_SIZE));
   operator_matmul_h<<<dim_grid, dim_block>>>(input1_ptr, input2_ptr, output_ptr, height, k, width);
 
   CUDA_POST_KERNEL_CHECK;
 }
 
 __global__ void operator_transpose_h(const float *input1, float *output,
-                                     unsigned int *input1_shape,
+                                     const unsigned int *input1_shape,
                                      unsigned int input1_dims,
-                                     unsigned int output_shape, unsigned int dim0,
+                                     const unsigned int *output_shape, unsigned int dim0,
                                      unsigned int dim1, unsigned int size) {
   unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -218,9 +218,9 @@ Storage *operator_transpose(const Storage *input1, unsigned int dim0,
 }
 
 __global__ void operator_mean_h(const float *input1, float *output,
-                                unsigned int *input1_shape,
+                                const unsigned int *input1_shape,
                                 unsigned int input1_dims,
-                                unsigned int *output_shape, unsigned int dim,
+                                const unsigned int *output_shape, unsigned int dim,
                                 unsigned int dim_stride, unsigned int size) {
   unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -229,7 +229,7 @@ __global__ void operator_mean_h(const float *input1, float *output,
 
     unsigned int *loc = new unsigned int[input1_dims];
     index2loc(index, output_shape, input1_dims - 1, loc);
-    for (unsigned int i = input1_dims - 1; i > dim, i--) {
+    for (int i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
     }
     loc[dim] = 0;
@@ -274,9 +274,9 @@ Storage *operator_mean(const Storage *input1, unsigned int dim) {
 }
 
 __global__ void operator_sum_h(const float *input1, float *output,
-                               unsigned int *input1_shape,
+                               const unsigned int *input1_shape,
                                unsigned int input1_dims,
-                               unsigned int *output_shape, unsigned int dim,
+                               const unsigned int *output_shape, unsigned int dim,
                                unsigned int dim_stride, unsigned int size) {
   unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
 

@@ -1,6 +1,5 @@
 #include <conv.cuh>
 
-#include <math_functions.h>
 #include <thrust/copy.h>
 #include <thrust/host_vector.h>
 
@@ -14,26 +13,26 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
                        const unsigned int pad_h, const unsigned int pad_w,
                        const unsigned int stride_h,
                        const unsigned int stride_w) {
-  unsigned int width = *inputs->shape.rbegin();
+  unsigned int width = *(inputs->shape.rbegin());
   unsigned int height = *(inputs->shape.rbegin() + 1);
   unsigned int channel_in = *(inputs->shape.rbegin() + 2);
   unsigned int batch_size = *(inputs->shape.rbegin() + 3);
 
-  unsigned int kernel_w = *filters->shape.rbegin();
+  unsigned int kernel_w = *(filters->shape.rbegin());
   unsigned int kernel_h = *(filters->shape.rbegin() + 1);
   unsigned int channel_out = *(filters->shape.rbegin() + 3);
 
   unsigned int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   unsigned int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
 
+  unsigned int batch_im_stride = channel_in * height * width;
+  unsigned int batch_col_stride =
+      channel_in * kernel_h * kernel_w * height_col * width_col;
+
   // im2col
   // [batch_size*(C_in*k_h*k_w)*(height_col * width_col)]
   std::unique_ptr<Storage> cols(new Storage(
       {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col}));
-
-  unsigned int batch_im_stride = channel_in * height * width;
-  unsigned int batch_col_stride =
-      channel_in * kernel_h * kernel_w * height_col * width_col;
 
   const float *inputs_ptr = thrust::raw_pointer_cast(inputs->data.data());
   const float *filters_ptr = thrust::raw_pointer_cast(filters->data.data());
@@ -81,12 +80,12 @@ Storage *operator_d_conv(const Storage *outputs_grad, const Storage *inputs,
                          const unsigned int stride_w, Storage *filters_grad) {
   Storage *inputs_grad = new Storage(inputs->shape);
 
-  unsigned int width = *inputs->shape.rbegin();
+  unsigned int width = *(inputs->shape.rbegin());
   unsigned int height = *(inputs->shape.rbegin() + 1);
   unsigned int channel_in = *(inputs->shape.rbegin() + 2);
   unsigned int batch_size = *(inputs->shape.rbegin() + 3);
 
-  unsigned int kernel_w = *filters->shape.rbegin();
+  unsigned int kernel_w = *(filters->shape.rbegin());
   unsigned int kernel_h = *(filters->shape.rbegin() + 1);
   unsigned int channel_out = *(filters->shape.rbegin() + 3);
 
@@ -219,10 +218,10 @@ __global__ void col2im_h(const unsigned int n, const float *data_col,
     // compute the start and end of the output
     const unsigned int w_col_start =
         (w_im < kernel_w) ? 0 : (w_im - kernel_w) / stride_w + 1;
-    const unsigned int w_col_end = min(w_im / stride_w + 1, width_col);
+    const unsigned int w_col_end = fminf(w_im / stride_w + 1, width_col);
     const unsigned int h_col_start =
         (h_im < kernel_h) ? 0 : (h_im - kernel_h) / stride_h + 1;
-    const unsigned int h_col_end = min(h_im / stride_h + 1, height_col);
+    const unsigned int h_col_end = fminf(h_im / stride_h + 1, height_col);
 
     for (unsigned int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
       for (unsigned int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
@@ -250,7 +249,7 @@ void col2im(const float *data_col, const unsigned int channels,
   unsigned int num_kernels = channels * height * width;
   // To avoid involving atomic operations, we will launch one kernel per
   // bottom dimension, and then in the kernel add up the top dimensions.
-  unsigned int grid_size = ceil((float)(num_kernels / BLOCK_SIZE);
+  unsigned int grid_size = ceil((float)(num_kernels / BLOCK_SIZE));
   col2im_h<<<grid_size, BLOCK_SIZE>>>(
       num_kernels, data_col, height, width, channels, kernel_h, kernel_w, pad_h,
       pad_w, stride_h, stride_w, height_col, width_col, data_im);

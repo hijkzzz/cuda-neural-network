@@ -33,12 +33,12 @@ __global__ void operator_bias_h(const float *inputs, const float *bias,
 }
 
 Storage *operator_bias(const Storage *inputs, const Storage *bias) {
-  const float *inputs_ptr = thrust::raw_pointer_cast(input1->data.data());
+  const float *inputs_ptr = thrust::raw_pointer_cast(inputs->data.data());
   const float *bias_ptr = thrust::raw_pointer_cast(bias->data.data());
-  Storage *output = new Storage(input1->shape);
+  Storage *output = new Storage(inputs->shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
 
-  unsigned int size = input1->data.size();
+  unsigned int size = inputs->data.size();
   unsigned int grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_bias_h<<<grid_size, BLOCK_SIZE>>>(inputs_ptr, bias_ptr, output_ptr,
                                              bias->data.size(), size);
@@ -49,4 +49,5 @@ Storage *operator_bias(const Storage *inputs, const Storage *bias) {
 
 Storage *operator_d_bias(const Storage *outputs_grad, Storage *bias_grad) {
   *bias_grad = *outputs_grad;
+  return new Storage(*outputs_grad);
 }

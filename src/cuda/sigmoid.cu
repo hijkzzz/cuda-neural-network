@@ -31,5 +31,5 @@ Storage *operator_d_sigmoid(const Storage *input1,
   thrust::transform(input1->data.begin(), input1->data.end(),
                     d_sigmoid->data.begin(), f);
 
-  return operator_mul(d_sigmoid, outputs_grad)
+  return operator_mul(d_sigmoid, outputs_grad);
 }

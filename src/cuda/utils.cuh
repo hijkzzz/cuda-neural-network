@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cuda_runtime.h>
 #include <iostream>
@@ -32,7 +32,7 @@ inline __device__ void swap(T &a, T &b) {
 
 __device__ void index2loc(unsigned int index, const unsigned int *shape,
                           unsigned int dims, unsigned int *loc) {
-  for (unsigned int i = dims - 1; i >= 0; i--) {
+  for (int i = dims - 1; i >= 0; i--) {
     loc[i] = index % shape[i];
     index /= shape[i];
   }
@@ -43,7 +43,7 @@ __device__ unsigned int loc2index(const unsigned int *loc,
                                   unsigned int dims) {
   unsigned int index = 0;
   unsigned int base = 1;
-  for (unsigned int i = dims - 1; i >= 0; i--) {
+  for (int i = dims - 1; i >= 0; i--) {
     index += base * loc[i];
     base *= shape[i];
   }

@@ -1,8 +1,8 @@
-﻿#include <softmax.cuh>
+#include <softmax.cuh>
 
 __global__ void operator_log_softmax_h(
-    const float *input1, float *output, unsigned int *input1_shape,
-    unsigned int input1_dims, unsigned int *temp_shape, unsigned int dim,
+    const float *input1, float *output, const unsigned int *input1_shape,
+    unsigned int input1_dims, const unsigned int *temp_shape, unsigned int dim,
     unsigned int dim_stride, unsigned int size) {
   unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -56,9 +56,10 @@ Storage *operator_log_softmax(const Storage *input1, unsigned int dim) {
   unsigned int grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_log_softmax_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
-      dim dim_stride, size);
+      dim, dim_stride, size);
 
   CUDA_POST_KERNEL_CHECK;
+  return output;
 }
 
 __global__ void operator_d_log_softmax_h(
