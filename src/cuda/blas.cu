@@ -1,4 +1,4 @@
-#include <blas.cuh>
+﻿#include <blas.cuh>
 #include <utils.cuh>
 
 #include <cuda_runtime.h>
@@ -265,7 +265,7 @@ Storage *operator_mean(const Storage *input1, int dim) {
   int input1_dims = input1->shape.size();
   int dim_stride = 1;
   for (int i = dim + 1; i < input1_dims; i++) {
-    dim_stride *= input1_shape_ptr[i];
+    dim_stride *= input1->shape[i];
   }
 
   int size = output->data.size();
@@ -318,12 +318,12 @@ Storage *operator_sum(const Storage *input1, int dim) {
   int input1_dims = input1->shape.size();
   int dim_stride = 1;
   for (int i = dim + 1; i < input1_dims; i++) {
-    dim_stride *= input1_shape_ptr[i];
+    dim_stride *= input1->shape[i];
   }
 
   int size = output->data.size();
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
-  operator_mean_h<<<grid_size, BLOCK_SIZE>>>(
+  operator_sum_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, output_shape_ptr,
       dim, dim_stride, size);
 

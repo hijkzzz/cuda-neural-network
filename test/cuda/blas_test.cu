@@ -1,7 +1,7 @@
-#include <test_tools.h>
+﻿#include <test_tools.h>
 #include <blas.cuh>
 
-#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include <thrust/copy.h>
 
 #include <iostream>
@@ -78,7 +78,8 @@ TEST(BlasTest, Matmul) {
   ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
   ASSERT_ANY_THROW(operator_matmul(&a, &c));
 
-  Storage d({2, 3, 3},{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
+  Storage d({2, 3, 3},
+            {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
   std::vector<float> temp3{15,  18,  21,  42,  54,  66,  69,  90,  111,
                            366, 396, 426, 474, 513, 552, 582, 630, 678};
 
@@ -103,6 +104,7 @@ TEST(BlasTest, Mean) {
       {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
   Storage a({2, 3, 3}, tempp);
   std::unique_ptr<Storage> result(operator_mean(&a, 0));
+  device_vector_cout(result->data);
 
   std::vector<float> temp({4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5});
   std::vector<int> temp2({3, 3});
@@ -114,7 +116,7 @@ TEST(BlasTest, Sum) {
   std::vector<float> tempp(
       {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
   Storage a({2, 3, 3}, tempp);
-  std::unique_ptr<Storage> result(operator_mean(&a, 0));
+  std::unique_ptr<Storage> result(operator_sum(&a, 0));
 
   std::vector<float> temp{9, 11, 13, 15, 17, 19, 21, 23, 25};
   std::vector<int> temp2({3, 3});

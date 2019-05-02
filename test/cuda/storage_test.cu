@@ -1,7 +1,7 @@
 #include <storage.cuh>
 #include <test_tools.h>
 
-#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include <thrust/copy.h>
 
 #include <iostream>

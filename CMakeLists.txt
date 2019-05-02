@@ -4,7 +4,7 @@ project(neural_network LANGUAGES CUDA CXX)
 # find cuda
 find_package(CUDA)
 include_directories(${CUDA_INCLUDE_DIRS})
-# set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_61,code=\"sm_61,compute_61\"")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_61,code=sm_61")
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -std=c++14")
@@ -66,7 +66,7 @@ if(UNIT_TEST)
 
     add_executable(unit_tests ${TEST_SRCS})
     target_include_directories(unit_tests PRIVATE ${TEST_DIR})
-    target_link_libraries(unit_tests gmock_main cu)
+    target_link_libraries(unit_tests gtest_main cu)
 
     add_test(NAME unit_tests COMMAND unit_tests)
 endif()
