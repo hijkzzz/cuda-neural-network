@@ -16,6 +16,11 @@ Storage::Storage(std::vector<int> shape, float value)
   this->data.resize(size, value);
 }
 
+Storage::Storage(std::vector<int> shape, const std::vector<float> &data)
+    : shape(shape), data(data.begin(), data.end()) {
+  this->check_size();
+}
+
 Storage::Storage(thrust::device_vector<int> shape, float value)
     : shape(shape) {
   int size =

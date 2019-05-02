@@ -16,12 +16,16 @@ TEST(StorageTest, Constructor) {
   thrust::device_vector<int> shape(3, 3);
   thrust::device_vector<float> data(3 * 3 * 3, 1);
   Storage b(shape, std::move(data));
-  ASSERT_EQ(data.size(), 0);
+  ASSERT_EQ(b.data.size(), 27);
   ASSERT_TRUE(device_vector_equals_vector(a.data, temp));
 
   thrust::device_vector<float> data2(3 * 3 * 3, 1);
   Storage c({3, 3, 3}, data2.begin(), data2.end());
   ASSERT_TRUE(device_vector_equals_vector(a.data, temp));
+
+  Storage d({3, 3, 3}, temp);
+  ASSERT_EQ(d.data.size(), 27);
+  ASSERT_TRUE(device_vector_equals_vector(d.data, temp));
 }
 
 TEST(StorageTest, Reshape) {
@@ -30,11 +34,7 @@ TEST(StorageTest, Reshape) {
   Storage a({3, 3, 3}, 1);
   a.reshape({9, 3});
   ASSERT_TRUE(device_vector_equals_vector(a.shape, temp));
-  try {
-    a.reshape({9, 1});
-    ASSERT_EQ(0, 1);
-  } catch (const std::exception&) {
-  }
+  ASSERT_ANY_THROW(a.reshape({9, 1}));
 }
 
 TEST(StorageTest, Xavier) {

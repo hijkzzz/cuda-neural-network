@@ -1,30 +1,28 @@
 cmake_minimum_required (VERSION 3.8)
 project(neural_network LANGUAGES CUDA CXX)
 
-if (MSVC)
-    # Warning
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd 4819")
-
-    # Runtime Library
-    # set(variables 
-    #     CMAKE_CXX_FLAGS_DEBUG
-    #     CMAKE_CXX_FLAGS_RELEASE
-    #     CMAKE_CXX_FLAGS_RELWITHDEBINFO
-    #     CMAKE_CXX_FLAGS_MINSIZEREL
-    # )
-    # foreach(variable ${variables})
-    # if(${variable} MATCHES "/MD")
-	#     string(REGEX REPLACE "/MD" "/MT" ${variable} "${${variable}}")
-    # endif()
-    # endforeach()
-endif()
-
 # find cuda
 find_package(CUDA)
 include_directories(${CUDA_INCLUDE_DIRS})
 # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode=arch=compute_61,code=\"sm_61,compute_61\"")
+
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -std=c++14")
+endif()
+
+if (MSVC)
+    # warning
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/wd 4819\"")
+
+    # static runtime
+    # set(CompilerFlags
+    #     CMAKE_CXX_FLAGS
+    #     CMAKE_CXX_FLAGS_DEBUG
+    #     CMAKE_CXX_FLAGS_RELEASE
+    #    )
+    # foreach(CompilerFlag ${CompilerFlags})
+    #   string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+    # endforeach()
 endif()
 
 # add cuda source

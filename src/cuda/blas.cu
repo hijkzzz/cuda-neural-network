@@ -1,4 +1,4 @@
-﻿#include <blas.cuh>
+#include <blas.cuh>
 #include <utils.cuh>
 
 #include <cuda_runtime.h>
@@ -9,6 +9,8 @@
 #include <cfloat>
 
 Storage *operator_add(const Storage *input1, const Storage *input2) {
+  CHECK_EQ(input1->data.size(), input2->data.size(), "error size");
+
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
                     input2->data.begin(), output->data.begin(),
@@ -32,6 +34,8 @@ Storage *operator_add(const Storage *input1, float value) {
 }
 
 Storage *operator_sub(const Storage *input1, const Storage *input2) {
+  CHECK_EQ(input1->data.size(), input2->data.size(), "error size");
+
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
                     input2->data.begin(), output->data.begin(),
@@ -40,6 +44,8 @@ Storage *operator_sub(const Storage *input1, const Storage *input2) {
 }
 
 Storage *operator_mul(const Storage *input1, const Storage *input2) {
+  CHECK_EQ(input1->data.size(), input2->data.size(), "error size");
+
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
                     input2->data.begin(), output->data.begin(),
@@ -63,6 +69,8 @@ Storage *operator_mul(const Storage *input1, float value) {
 }
 
 Storage *operator_div(const Storage *input1, const Storage *input2) {
+  CHECK_EQ(input1->data.size(), input2->data.size(), "error size");
+
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
                     input2->data.begin(), output->data.begin(),
@@ -190,7 +198,7 @@ __global__ void operator_transpose_h(const float *input1, float *output,
     int *loc = new int[input1_dims];
     index2loc(index, input1_shape, input1_dims, loc);
     swap(loc[dim0], loc[dim1]);
-    int target_index = loc2index(loc, input1_shape, input1_dims);
+    int target_index = loc2index(loc, output_shape, input1_dims);
     delete[] loc;
 
     output[target_index] = input1[index];
@@ -202,7 +210,7 @@ Storage *operator_transpose(const Storage *input1, int dim0, int dim1) {
   const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
 
   thrust::device_vector<int> new_shape(input1->shape);
-  std::swap(new_shape[dim0], new_shape[dim1]);
+  swap(new_shape[dim0], new_shape[dim1]);
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
   int *output_shape_ptr = thrust::raw_pointer_cast(output->shape.data());

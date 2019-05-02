@@ -9,6 +9,7 @@
 class Storage {
  public:
   explicit Storage(std::vector<int> shape, float value = 0);
+  explicit Storage(std::vector<int> shape, const std::vector<float> &data);
   explicit Storage(thrust::device_vector<int> shape, float value = 0);
   explicit Storage(thrust::device_vector<int> shape,
                    thrust::device_vector<float> &&data);

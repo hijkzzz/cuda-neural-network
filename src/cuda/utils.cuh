@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
@@ -24,13 +24,13 @@
 #define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
 
 template <class T>
-__device__ void swap(T &a, T &b) {
+__host__ __device__ void swap(T &a, T &b) {
   T temp = a;
   a = b;
   b = temp;
 }
 
-inline __device__ void index2loc(int index, const int *shape, int dims,
+inline __host__ __device__ void index2loc(int index, const int *shape, int dims,
                                  int *loc) {
   for (int i = dims - 1; i >= 0; i--) {
     loc[i] = index % shape[i];
@@ -38,7 +38,7 @@ inline __device__ void index2loc(int index, const int *shape, int dims,
   }
 }
 
-inline __device__ int loc2index(const int *loc, const int *shape, int dims) {
+inline __host__ __device__ int loc2index(const int *loc, const int *shape, int dims) {
   int index = 0;
   int base = 1;
   for (int i = dims - 1; i >= 0; i--) {
@@ -49,5 +49,5 @@ inline __device__ int loc2index(const int *loc, const int *shape, int dims) {
 }
 
 // explicit instantiation
-template __device__ void swap<int>(int &a, int &b);
-template __device__ void swap<float>(float &a, float &b);
+template __host__ __device__ void swap<int>(int &a, int &b);
+template __host__ __device__ void swap<float>(float &a, float &b);
