@@ -1,4 +1,4 @@
-﻿#include <blas.cuh>
+#include <blas.cuh>
 #include <utils.cuh>
 
 #include <cuda_runtime.h>
@@ -126,13 +126,13 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
   __shared__ float shared_input1[TILE_SIZE][TILE_SIZE];
   __shared__ float shared_input2[TILE_SIZE][TILE_SIZE];
 
-  int batch_idx = blockIdx.x;
+  int batch_idx = blockIdx.z;
   input1 += batch_idx * height * k;
   input2 += batch_idx * k * width;
   output += batch_idx * height * width;
 
-  int bx = blockIdx.y;
-  int by = blockIdx.z;
+  int bx = blockIdx.x;
+  int by = blockIdx.y;
   int tx = threadIdx.x;
   int ty = threadIdx.y;
 
@@ -157,7 +157,7 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
     __syncthreads();
   }
 
-  if (row < height && col < width) output[row * height + col] = v;
+  if (row < height && col < width) output[row * width + col] = v;
 }
 
 Storage *operator_matmul(const Storage *input1, const Storage *input2) {
@@ -167,20 +167,20 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
   CHECK_EQ(k, *(input2->shape.rbegin() + 1), "matmul shape error");
 
   int batch_size = 1;
-  for (auto i = input1->shape.rbegin() + 2; i < input1->shape.rend(); i++) {
+  for (auto i = input1->shape.rbegin() + 2; i != input1->shape.rend(); i++) {
     batch_size *= *i;
   }
 
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const float *input2_ptr = thrust::raw_pointer_cast(input2->data.data());
   thrust::device_vector<int> new_shape(input1->shape);
-  new_shape.back() = width;
+  *(new_shape.rbegin()) = width;
   Storage *output = new Storage(new_shape);
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
 
   dim3 dim_block(TILE_SIZE, TILE_SIZE);
-  dim3 dim_grid(batch_size, ceil((float)height / TILE_SIZE),
-                ceil((float)width / TILE_SIZE));
+  dim3 dim_grid(ceil((float)height / TILE_SIZE), ceil((float)width / TILE_SIZE),
+                batch_size);
   operator_matmul_h<<<dim_grid, dim_block>>>(input1_ptr, input2_ptr, output_ptr,
                                              height, k, width);
 

@@ -1,4 +1,4 @@
-﻿#include <test_tools.h>
+#include <test_tools.h>
 #include <blas.cuh>
 
 #include <gtest/gtest.h>
@@ -85,6 +85,13 @@ TEST(BlasTest, Matmul) {
 
   std::unique_ptr<Storage> result2(operator_matmul(&d, &d));
   ASSERT_TRUE(device_vector_equals_vector(result2->data, temp3));
+
+  Storage wt({3, 3}, {0, 3, 6, 1, 4, 7, 2, 5, 8});
+  Storage o_grad({2, 3}, {0, 1, 2, 3, 4, 5});
+  std::unique_ptr<Storage> x_grad(operator_matmul(&o_grad, &wt));
+  ASSERT_TRUE(device_vector_equals_vector(x_grad->shape, {2, 3}));
+  ASSERT_TRUE(
+      device_vector_equals_vector(x_grad->data, {5, 14, 23, 14, 50, 86}));
 }
 
 TEST(BlasTest, Transpose) {
