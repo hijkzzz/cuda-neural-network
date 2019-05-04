@@ -22,9 +22,10 @@ Convolutional Neural Network with CUDA
 ```
 mkdir build
 cd build
-cmake .. --build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake --build
 
-// Download the minist dataset from http://yann.lecun.com/exdb/mnist/
+# Download the minist dataset from http://yann.lecun.com/exdb/mnist/
 ./minist
 ```
 

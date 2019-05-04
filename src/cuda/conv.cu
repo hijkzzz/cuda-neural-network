@@ -190,6 +190,7 @@ Storage *operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad) {
   return new Storage(*outputs_grad);
 }
 
+// C*H*W >> (C_out*k_h*k_w) * (height_col * width_col) 
 __global__ void im2col_h(const int n, const float *data_im, const int height,
                          const int width, const int kernel_h,
                          const int kernel_w, const int pad_h, const int pad_w,
@@ -239,6 +240,7 @@ void im2col(const float *data_im, const int channels, const int height,
   CUDA_POST_KERNEL_CHECK;
 }
 
+// (C_out*k_h*k_w) * (height_col * width_col) >> C*H*W 
 __global__ void col2im_h(const int n, const float *data_col, const int height,
                          const int width, const int channels,
                          const int kernel_h, const int kernel_w,
