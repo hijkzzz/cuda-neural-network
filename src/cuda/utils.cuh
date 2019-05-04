@@ -1,14 +1,19 @@
-﻿#pragma once
+#pragma once
 
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
+#include <iostream>
 
 #define BLOCK_SIZE 256
 #define TILE_SIZE 16
 
-#define CHECK_EQ(val1, val2, message) \
-  do {                                \
-    if (val1 != val2) throw message;  \
+#define CHECK_EQ(val1, val2, message)                              \
+  do {                                                             \
+    if (val1 != val2) {                                            \
+      std::cout << __FILE__ << "(" << __LINE__ << "): " << message \
+                << std::endl;                                      \
+      throw std::runtime_error(message);                           \
+    }                                                              \
   } while (0)
 
 #define CUDA_KERNEL_LOOP(i, n)                                 \
@@ -31,14 +36,15 @@ __host__ __device__ void swap(T &a, T &b) {
 }
 
 inline __host__ __device__ void index2loc(int index, const int *shape, int dims,
-                                 int *loc) {
+                                          int *loc) {
   for (int i = dims - 1; i >= 0; i--) {
     loc[i] = index % shape[i];
     index /= shape[i];
   }
 }
 
-inline __host__ __device__ int loc2index(const int *loc, const int *shape, int dims) {
+inline __host__ __device__ int loc2index(const int *loc, const int *shape,
+                                         int dims) {
   int index = 0;
   int base = 1;
   for (int i = dims - 1; i >= 0; i--) {

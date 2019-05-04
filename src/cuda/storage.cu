@@ -10,9 +10,8 @@
 
 Storage::Storage(std::vector<int> shape, float value)
     : shape(shape.begin(), shape.end()) {
-  int size =
-      thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
-                     thrust::multiplies<int>());
+  int size = thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
+                            thrust::multiplies<int>());
   this->data.resize(size, value);
 }
 
@@ -21,11 +20,9 @@ Storage::Storage(std::vector<int> shape, const std::vector<float> &data)
   this->check_size();
 }
 
-Storage::Storage(thrust::device_vector<int> shape, float value)
-    : shape(shape) {
-  int size =
-      thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
-                     thrust::multiplies<int>());
+Storage::Storage(thrust::device_vector<int> shape, float value) : shape(shape) {
+  int size = thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
+                            thrust::multiplies<int>());
   this->data.resize(size, value);
 }
 
@@ -44,15 +41,22 @@ Storage::Storage(std::vector<int> shape,
 }
 
 void Storage::check_size() {
-  int size =
-      thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
-                     thrust::multiplies<int>());
-  CHECK_EQ(size, this->data.size(), "storage error size");
+  int size = thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
+                            thrust::multiplies<int>());
+  CHECK_EQ(size, this->data.size(), "Storage: error size");
 }
 
 void Storage::reshape(std::vector<int> shape) {
   this->shape.assign(shape.begin(), shape.end());
   this->check_size();
+}
+
+std::vector<int> Storage::get_shape() {
+  return std::vector<int>(this->shape.begin(), this->shape.end());
+}
+
+std::vector<float> Storage::get_data() {
+  return std::vector<float>(this->data.begin(), this->data.end());
 }
 
 __global__ void storage_xavier(float *a, int size, float scale) {

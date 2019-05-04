@@ -1,4 +1,4 @@
-﻿#include <conv.cuh>
+#include <conv.cuh>
 
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
@@ -21,6 +21,8 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
   int kernel_h = *(filters->shape.rbegin() + 1);
   int channel_out = *(filters->shape.rbegin() + 3);
 
+  CHECK_EQ(*(filters->shape.rbegin() + 2), channel_in, "operator_conv: size error");
+
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
 
@@ -30,6 +32,7 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
 
   // im2col
   // [batch_size*(C_in*k_h*k_w)*(height_col * width_col)]
+  cols->data.resize(batch_size * channel_in * kernel_h * kernel_w * height_col * width_col);
   cols->reshape(
       {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col});
 
@@ -51,18 +54,19 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
   // [batch_size * channel_out * (height_col * width_col)]
   Storage *outputs =
       new Storage({batch_size, channel_out, height_col, width_col});
-  int output_stride = channel_out * height_col * width_col;
+  int batch_output_stride = channel_out * height_col * width_col;
 
   for (int i = 0; i < batch_size; ++i) {
-    auto cur_output_iter = outputs->data.begin() + i * output_stride;
-    auto cur_col_iter = cols->data.begin() + i * batch_col_stride;
-    std::unique_ptr<Storage> cur_col(
+    auto cols_iter = cols->data.begin() + i * batch_col_stride;
+    std::unique_ptr<Storage> col(
         new Storage({channel_in * kernel_h * kernel_w, height_col * width_col},
-                    cur_col_iter, cur_col_iter + batch_col_stride));
+                    cols_iter, cols_iter + batch_col_stride));
 
     std::unique_ptr<Storage> temp(
-        operator_matmul(new_filters.get(), cur_col.get()));
-    thrust::copy(temp->data.begin(), temp->data.end(), cur_output_iter);
+        operator_matmul(new_filters.get(), col.get()));
+    auto outputs_iter = outputs->data.begin() + i * batch_output_stride;
+    assert(temp->data.size() == batch_output_stride);
+    thrust::copy(temp->data.begin(), temp->data.end(), outputs_iter);
   }
   return outputs;
 }
@@ -125,22 +129,65 @@ Storage *operator_d_conv(const Storage *outputs_grad, const Storage *inputs,
     float *dl_dim_ptr = thrust::raw_pointer_cast(dl_dim->data.data());
     col2im(dl_dcol_ptr, channel_in, height, width, kernel_h, kernel_w, pad_h,
            pad_w, stride_h, stride_w, dl_dim_ptr);
+    assert(dl_dim->data.size() == batch_inputs_grad_stride);
     thrust::copy(dl_dim->data.begin(), dl_dim->data.end(),
                  inputs_grad->data.begin() + i * batch_inputs_grad_stride);
 
     // dL/dF = dL/dY * col^T
     std::unique_ptr<Storage> col(
-        new Storage({channel_in * height * width, height_col * width_col},
+        new Storage({channel_in * kernel_h * kernel_w, height_col * width_col},
                     cols->data.begin() + i * batch_col_stride,
                     cols->data.begin() + (i + 1) * batch_col_stride));
     std::unique_ptr<Storage> col_t(operator_transpose(col.get(), 0, 1));
     col.release();
     std::unique_ptr<Storage> dl_df(operator_matmul(dl_dy.get(), col_t.get()));
+    assert(dl_df->data.size() == batch_filters_grad_stride);
     thrust::copy(dl_df->data.begin(), dl_df->data.end(),
                  filters_grad->data.begin() + i * batch_filters_grad_stride);
   }
 
   return inputs_grad;
+}
+
+__global__ void operator_conv_bias_h(const float *inputs, const float *bias,
+                                     float *output, int channel_size,
+                                     int channel_stride, int size) {
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (index < size) {
+    int col = (index / channel_stride) % channel_size;
+    output[index] = inputs[index] + bias[col];
+  }
+}
+
+Storage *operator_conv_bias(const Storage *inputs, const Storage *bias) {
+  CHECK_EQ(bias->data.size(), *(inputs->shape.begin() + 1), "operator_conv_bias: size error");
+
+  const float *inputs_ptr = thrust::raw_pointer_cast(inputs->data.data());
+  const float *bias_ptr = thrust::raw_pointer_cast(bias->data.data());
+  Storage *output = new Storage(inputs->shape);
+  float *output_ptr = thrust::raw_pointer_cast(output->data.data());
+
+  int channel_stride =
+      *(inputs->shape.rbegin()) * *(inputs->shape.rbegin() + 1);
+
+  int size = inputs->data.size();
+  int grid_size = ceil((float)(size) / BLOCK_SIZE);
+  operator_conv_bias_h<<<grid_size, BLOCK_SIZE>>>(inputs_ptr, bias_ptr,
+                                                  output_ptr, bias->data.size(),
+                                                  channel_stride, size);
+
+  CUDA_POST_KERNEL_CHECK;
+  return output;
+}
+
+Storage *operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad) {
+  // N*C*H*W ==> N*C
+  std::unique_ptr<Storage> sum3(operator_sum(outputs_grad, 3));
+  std::unique_ptr<Storage> sum2(operator_sum(sum3.get(), 2));
+  *bias_grad = std::move(*sum2);
+
+  return new Storage(*outputs_grad);
 }
 
 __global__ void im2col_h(const int n, const float *data_im, const int height,
@@ -184,7 +231,7 @@ void im2col(const float *data_im, const int channels, const int height,
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
   int num_kernels = channels * height_col * width_col;
-  int grid_size = ceil((float)(num_kernels / BLOCK_SIZE));
+  int grid_size = ceil((float)num_kernels / BLOCK_SIZE);
 
   im2col_h<<<grid_size, BLOCK_SIZE>>>(
       num_kernels, data_im, height, width, kernel_h, kernel_w, pad_h, pad_w,
@@ -236,7 +283,7 @@ void col2im(const float *data_col, const int channels, const int height,
   int num_kernels = channels * height * width;
   // To avoid involving atomic operations, we will launch one kernel per
   // bottom dimension, and then in the kernel add up the top dimensions.
-  int grid_size = ceil((float)(num_kernels / BLOCK_SIZE));
+  int grid_size = ceil((float)num_kernels / BLOCK_SIZE);
   col2im_h<<<grid_size, BLOCK_SIZE>>>(
       num_kernels, data_col, height, width, channels, kernel_h, kernel_w, pad_h,
       pad_w, stride_h, stride_w, height_col, width_col, data_im);

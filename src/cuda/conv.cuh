@@ -3,13 +3,17 @@
 #include <blas.cuh>
 
 Storage *operator_conv(const Storage *inputs, const Storage *filters,
-                       const int pad_h, const int pad_w, const int stride_h,
-                       const int stride_w);
+                       Storage *cols, const int pad_h, const int pad_w,
+                       const int stride_h, const int stride_w);
 
 Storage *operator_d_conv(const Storage *outputs_grad, const Storage *inputs,
                          const Storage *cols, const Storage *filters,
                          const int pad_h, const int pad_w, const int stride_h,
                          const int stride_w, Storage *filters_grad);
+
+Storage *operator_conv_bias(const Storage *inputs, const Storage *bias);
+
+Storage *operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad);
 
 // High Performance Convolutional Neural Networks for Document Processing
 // https://hal.inria.fr/file/index/docid/112631/filename/p1038112283956.pdf

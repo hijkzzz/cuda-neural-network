@@ -9,7 +9,7 @@
 #include <cfloat>
 
 Storage *operator_add(const Storage *input1, const Storage *input2) {
-  CHECK_EQ(input1->data.size(), input2->data.size(), "error size");
+  CHECK_EQ(input1->data.size(), input2->data.size(), "operator_add: error size");
 
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
@@ -34,7 +34,7 @@ Storage *operator_add(const Storage *input1, float value) {
 }
 
 Storage *operator_sub(const Storage *input1, const Storage *input2) {
-  CHECK_EQ(input1->data.size(), input2->data.size(), "error size");
+  CHECK_EQ(input1->data.size(), input2->data.size(), "operator_sub: error size");
 
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
@@ -44,7 +44,7 @@ Storage *operator_sub(const Storage *input1, const Storage *input2) {
 }
 
 Storage *operator_mul(const Storage *input1, const Storage *input2) {
-  CHECK_EQ(input1->data.size(), input2->data.size(), "error size");
+  CHECK_EQ(input1->data.size(), input2->data.size(), "operator_mul: error size");
 
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
@@ -69,7 +69,7 @@ Storage *operator_mul(const Storage *input1, float value) {
 }
 
 Storage *operator_div(const Storage *input1, const Storage *input2) {
-  CHECK_EQ(input1->data.size(), input2->data.size(), "error size");
+  CHECK_EQ(input1->data.size(), input2->data.size(), "operator_div: error size");
 
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
@@ -164,7 +164,7 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
   int height = *(input1->shape.rbegin() + 1);
   int k = *(input1->shape.rbegin());
   int width = *(input2->shape.rbegin());
-  CHECK_EQ(k, *(input2->shape.rbegin() + 1), "matmul shape error");
+  CHECK_EQ(k, *(input2->shape.rbegin() + 1), "operator_matmul: shape error");
 
   int batch_size = 1;
   for (auto i = input1->shape.rbegin() + 2; i != input1->shape.rend(); i++) {
