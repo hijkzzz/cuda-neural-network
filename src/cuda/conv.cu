@@ -205,10 +205,14 @@ __global__ void im2col_h(const int n, const float *data_im, const int height,
     const int c_col = c_im * kernel_h * kernel_w;
     const int h_offset = h_col * stride_h - pad_h;
     const int w_offset = w_col * stride_w - pad_w;
+
+    // channel offset
     float *data_col_ptr = data_col;
     data_col_ptr += (c_col * height_col + h_col) * width_col + w_col;
     const float *data_im_ptr = data_im;
     data_im_ptr += (c_im * height + h_offset) * width + w_offset;
+
+    // copy to col
     for (int i = 0; i < kernel_h; ++i) {
       for (int j = 0; j < kernel_w; ++j) {
         int h_im = h_offset + i;
@@ -253,7 +257,7 @@ __global__ void col2im_h(const int n, const float *data_col, const int height,
     const int h_im = (index / width) % height + pad_h;
     const int c_im = index / (width * height);
 
-    // compute the start and end of the output
+    // compute the start and end of the col
     const int w_col_start =
         (w_im < kernel_w) ? 0 : (w_im - kernel_w) / stride_w + 1;
     const int w_col_end = fminf(w_im / stride_w + 1, width_col);
@@ -261,6 +265,7 @@ __global__ void col2im_h(const int n, const float *data_col, const int height,
         (h_im < kernel_h) ? 0 : (h_im - kernel_h) / stride_h + 1;
     const int h_col_end = fminf(h_im / stride_h + 1, height_col);
 
+    // copy to im
     for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
       for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
         int h_k = (h_im - h_col * stride_h);

@@ -16,7 +16,7 @@ Convolutional Neural Network with CUDA
 ## Prerequisites
 * CMake 3.8+
 * MSVC14.00/GCC6+
-* CUDA9+
+* CUDA9.0+
 
 ## Run
 ```
