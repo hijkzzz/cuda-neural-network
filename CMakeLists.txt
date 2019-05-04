@@ -2,14 +2,14 @@ cmake_minimum_required (VERSION 3.8)
 project(neural_network LANGUAGES CUDA CXX)
 
 # option
-option(MINIST "minst demo" OFF)
+option(MINIST "minst demo" ON)
 option(WRAP_LIB "pybind11" OFF)
 option(UNIT_TEST "googletest" ON)
 
 # find cuda
 find_package(CUDA)
 include_directories(${CUDA_INCLUDE_DIRS})
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_61,code=sm_61")
+#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_61,code=sm_61")
 set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -g -G")
  
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -48,9 +48,10 @@ target_link_libraries(cu PUBLIC cuda)
 # minist demo
 if (MINIST) 
     set(MINIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/minist)
-    file(GLOB MINIST_DIR ${TEST_DIR}/*.cu)
+    file(GLOB MINIST_SRCS ${MINIST_DIR}/*.cu)
 
-    add_executable(minist ${MINIST_DIR})
+    add_executable(minist ${MINIST_SRCS})
+    target_include_directories(minist PRIVATE ${MINIST_DIR})
     target_link_libraries(minist cu)
 endif()
 
@@ -77,7 +78,7 @@ if(UNIT_TEST)
 
     add_executable(unit_tests ${TEST_SRCS})
     target_include_directories(unit_tests PRIVATE ${TEST_DIR})
-    target_link_libraries(unit_tests gtest_main cu)
+    target_link_libraries(unit_tests cu gtest_main)
 
     add_test(NAME unit_tests COMMAND unit_tests)
 endif()

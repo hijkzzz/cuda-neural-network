@@ -1,3 +1,5 @@
-#include <iostream>
+#include <minist.cuh>
 
-int main() {}
+int main() {
+
+}
