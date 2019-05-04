@@ -3,7 +3,6 @@ project(neural_network LANGUAGES CUDA CXX)
 
 # option
 option(MINIST "minst demo" ON)
-option(WRAP_LIB "pybind11" OFF)
 option(UNIT_TEST "googletest" ON)
 
 # find cuda
@@ -34,7 +33,6 @@ endif()
 # add cuda source
 file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/*.cuh)
 file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/*.cu)
-file(GLOB PYBIND11_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/python/*.cpp)
 
 source_group("Include" FILES ${HEADERS})
 source_group("Source" FILES ${SOURCES} ${PYBIND11_SOURCES})
@@ -53,19 +51,6 @@ if (MINIST)
     add_executable(minist ${MINIST_SRCS})
     target_include_directories(minist PRIVATE ${MINIST_DIR})
     target_link_libraries(minist cu)
-endif()
-
-# wrap library
-if(WRAP_LIB)
-    # find pybind11
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_parts/pybind11)
-    include_directories(${PYBIND11_INCLUDE_DIR})
-    if(CMAKE_COMPILER_IS_GNUCXX)
-	    set(PYBIND11_CPP_STANDARD "-std=c++14")
-    endif()
-
-	pybind11_add_module(neural_network SHARED ${PYBIND11_SOURCES})
-	target_link_libraries(neural_network PUBLIC cu)
 endif()
 
 # unit test
