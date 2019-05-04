@@ -17,7 +17,7 @@ Storage *operator_relu(const Storage *input1) {
 
 struct relu_d_functor {
   __host__ __device__ float operator()(const float &x) const {
-    return x > 0 ? 1 : 0;
+    return x > FLT_EPSILON ? 1 : 0;
   }
 };
 

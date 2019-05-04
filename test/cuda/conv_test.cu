@@ -176,7 +176,8 @@ TEST(ConvTest, ConvBackward) {
                   0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8});
 
   // im2col
-  Storage cols({batch_size, channel_in * kernel_h * kernel_w, height_col, width_col});
+  Storage cols(
+      {batch_size, channel_in * kernel_h * kernel_w, height_col, width_col});
   const float *im_ptr = thrust::raw_pointer_cast(input.data.data());
   float *col_ptr = thrust::raw_pointer_cast(cols.data.data());
 
@@ -206,6 +207,27 @@ TEST(ConvTest, ConvBackward) {
   // "valid")
 }
 
-TEST(ConvTest, ConvBiasForward) {}
+TEST(ConvTest, ConvBiasForward) {
+  Storage input({1, 2, 3, 3},
+                {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
+  Storage bias({1, 1, 2}, {1, 2});
 
-TEST(ConvTest, ConvBiasBackward) {}
+  std::unique_ptr<Storage> result(operator_conv_bias(&input, &bias));
+  ASSERT_TRUE(device_vector_equals_vector(
+      result->data,
+      {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19}));
+}
+
+TEST(ConvTest, ConvBiasBackward) {
+  Storage output_grad(
+      {2, 2, 3, 3},
+      {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
+  Storage bias_grad({2, 3, 2});
+
+  std::unique_ptr<Storage> result(
+      operator_d_conv_bias(&output_grad, &bias_grad));
+
+  ASSERT_TRUE(device_vector_equals_vector(bias_grad.shape, {2, 2}));
+  ASSERT_TRUE(device_vector_equals_vector(bias_grad.data, {36, 117, 36, 117}));
+}
