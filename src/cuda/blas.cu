@@ -9,7 +9,8 @@
 #include <cfloat>
 
 Storage *operator_add(const Storage *input1, const Storage *input2) {
-  CHECK_EQ(input1->data.size(), input2->data.size(), "operator_add: error size");
+  CHECK_EQ(input1->data.size(), input2->data.size(),
+           "operator_add: error size");
 
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
@@ -34,7 +35,8 @@ Storage *operator_add(const Storage *input1, float value) {
 }
 
 Storage *operator_sub(const Storage *input1, const Storage *input2) {
-  CHECK_EQ(input1->data.size(), input2->data.size(), "operator_sub: error size");
+  CHECK_EQ(input1->data.size(), input2->data.size(),
+           "operator_sub: error size");
 
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
@@ -44,7 +46,8 @@ Storage *operator_sub(const Storage *input1, const Storage *input2) {
 }
 
 Storage *operator_mul(const Storage *input1, const Storage *input2) {
-  CHECK_EQ(input1->data.size(), input2->data.size(), "operator_mul: error size");
+  CHECK_EQ(input1->data.size(), input2->data.size(),
+           "operator_mul: error size");
 
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
@@ -69,7 +72,8 @@ Storage *operator_mul(const Storage *input1, float value) {
 }
 
 Storage *operator_div(const Storage *input1, const Storage *input2) {
-  CHECK_EQ(input1->data.size(), input2->data.size(), "operator_div: error size");
+  CHECK_EQ(input1->data.size(), input2->data.size(),
+           "operator_div: error size");
 
   Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
@@ -275,6 +279,14 @@ Storage *operator_mean(const Storage *input1, int dim) {
       dim, dim_stride, size);
 
   CUDA_POST_KERNEL_CHECK;
+
+  if (output->shape.size() == 1) {
+    if (dim == 1) {
+      output->reshape(std::vector<int>{*output->shape.begin(), 1});
+    } else {
+      output->reshape(std::vector<int>{1, *output->shape.begin()});
+    }
+  }
   return output;
 }
 
@@ -328,5 +340,13 @@ Storage *operator_sum(const Storage *input1, int dim) {
       dim, dim_stride, size);
 
   CUDA_POST_KERNEL_CHECK;
+
+  if (output->shape.size() == 1) {
+    if (dim == 1) {
+      output->reshape(std::vector<int>{*output->shape.begin(), 1});
+    } else {
+      output->reshape(std::vector<int>{1, *output->shape.begin()});
+    }
+  }
   return output;
 }

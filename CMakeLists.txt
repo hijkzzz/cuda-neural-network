@@ -1,11 +1,17 @@
 cmake_minimum_required (VERSION 3.8)
 project(neural_network LANGUAGES CUDA CXX)
 
+# option
+option(MINIST "minst demo" OFF)
+option(WRAP_LIB "pybind11" OFF)
+option(UNIT_TEST "googletest" ON)
+
 # find cuda
 find_package(CUDA)
 include_directories(${CUDA_INCLUDE_DIRS})
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_61,code=sm_61")
-
+set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -g -G")
+ 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -std=c++14")
 endif()
@@ -39,9 +45,14 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/cuda)
 add_library(cu STATIC ${SOURCES})
 target_link_libraries(cu PUBLIC cuda)
 
-# option
-option(WRAP_LIB "wrap library" OFF)
-option(UNIT_TEST "unit test" ON)
+# minist demo
+if (MINIST) 
+    set(MINIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/minist)
+    file(GLOB MINIST_DIR ${TEST_DIR}/*.cu)
+
+    add_executable(minist ${MINIST_DIR})
+    target_link_libraries(minist cu)
+endif()
 
 # wrap library
 if(WRAP_LIB)

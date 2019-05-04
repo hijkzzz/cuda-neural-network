@@ -41,6 +41,7 @@ Storage::Storage(std::vector<int> shape,
 }
 
 void Storage::check_size() {
+  CHECK_EQ(true, this->shape.size() >= 2, "Storage: error, shape.size() < 2");
   int size = thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
                             thrust::multiplies<int>());
   CHECK_EQ(size, this->data.size(), "Storage: error size");
@@ -73,7 +74,7 @@ void Storage::xavier(size_t in_size, size_t out_size) {
   int size = this->data.size();
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
 
-  float scale = std::sqrt((double)6) / std::sqrt((float)(in_size) + out_size);
+  float scale = std::sqrt((float)6) / std::sqrt((float)(in_size) + out_size);
   storage_xavier<<<grid_size, BLOCK_SIZE>>>(a_ptr, size, scale);
 
   CUDA_POST_KERNEL_CHECK;

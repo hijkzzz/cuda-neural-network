@@ -117,6 +117,12 @@ TEST(BlasTest, Mean) {
   std::vector<int> temp2({3, 3});
   ASSERT_TRUE(device_vector_equals_vector(result->shape, temp2));
   ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+
+  // corner case
+  Storage b(std::vector<int>({1, 5}), {1, 2, 3, 4, 5});
+  std::unique_ptr<Storage> result2(operator_mean(&b, 1));
+  ASSERT_TRUE(device_vector_equals_vector(result2->shape, {1, 1}));
+  ASSERT_TRUE(device_vector_equals_vector(result2->data, {3}));
 }
 
 TEST(BlasTest, Sum) {
@@ -129,4 +135,10 @@ TEST(BlasTest, Sum) {
   std::vector<int> temp2({3, 3});
   ASSERT_TRUE(device_vector_equals_vector(result->shape, temp2));
   ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+
+  // corner case
+  Storage b(std::vector<int>({5, 1}), {1, 2, 3, 4, 5});
+  std::unique_ptr<Storage> result2(operator_sum(&b, 0));
+  ASSERT_TRUE(device_vector_equals_vector(result2->shape, {1, 1}));
+  ASSERT_TRUE(device_vector_equals_vector(result2->data, {15}));
 }
