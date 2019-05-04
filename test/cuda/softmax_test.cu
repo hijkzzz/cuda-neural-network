@@ -22,7 +22,7 @@ TEST(SoftMax, Backward) {
                 {0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33});
 
   std::unique_ptr<Storage> input_grad(
-      operator_d_log_softmax(&output_grad, 1, &input));
+      operator_d_log_softmax(&output_grad, &input, 1));
   ASSERT_TRUE(device_vector_equals_vector(input_grad->shape, {3, 3}));
   device_vector_cout(input_grad->data);
 }
@@ -40,7 +40,7 @@ TEST(SoftMax, SoftMaxLossForwardBackward1) {
   std::unique_ptr<Storage> nll_grad(operator_d_nll_loss(&Y));
   device_vector_cout(nll_grad->data);
   std::unique_ptr<Storage> softmax_grad(
-      operator_d_log_softmax(nll_grad.get(), 1, &X));
+      operator_d_log_softmax(nll_grad.get(), &X, 1));
 
   ASSERT_TRUE(device_vector_equals_vector(softmax_grad->shape, {3, 3}));
   device_vector_cout(softmax_grad->data);
@@ -62,7 +62,7 @@ TEST(SoftMax, SoftMaxLossForwardBackward2) {
 
   std::unique_ptr<Storage> nll_grad(operator_d_nll_loss(&Y));
   std::unique_ptr<Storage> softmax_grad(
-      operator_d_log_softmax(nll_grad.get(), 1, &X));
+      operator_d_log_softmax(nll_grad.get(), &X, 1));
 
   ASSERT_TRUE(device_vector_equals_vector(softmax_grad->shape, {3, 3}));
   device_vector_cout(softmax_grad->data);
