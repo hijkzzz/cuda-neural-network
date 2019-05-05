@@ -1,4 +1,4 @@
-#include <minist.cuh>
+﻿#include <minist.cuh>
 
 Minist::Minist(DataSet* dataset) : dataset(dataset) { this->init_weights(); }
 
@@ -283,7 +283,7 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
 
   this->grads["FC2_bias"] = std::shared_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["FC2"] = std::shared_ptr<Storage>(operator_d_bias(
-      this->grads["FC2"].get(), this->weights["FC2_bias"].get()));
+      this->grads["FC2"].get(), this->grads["FC2_bias"].get()));
 
   this->grads["FC2_weights"] = std::shared_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["FC2"] = std::shared_ptr<Storage>(operator_d_linear(
@@ -296,7 +296,7 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
 
   this->grads["FC1_bias"] = std::shared_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["FC1"] = std::shared_ptr<Storage>(operator_d_bias(
-      this->grads["FC1"].get(), this->weights["FC1_bias"].get()));
+      this->grads["FC1"].get(), this->grads["FC1_bias"].get()));
 
   this->grads["FC1_weights"] = std::shared_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["FC1"] = std::shared_ptr<Storage>(operator_d_linear(

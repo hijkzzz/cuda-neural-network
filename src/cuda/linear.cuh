@@ -9,4 +9,4 @@ Storage *operator_d_linear(const Storage *outputs_grad, const Storage *inputs,
 
 Storage *operator_bias(const Storage *inputs, const Storage *bias);
 
-Storage *operator_d_bias(const Storage *outputs_grad, Storage *bias);
+Storage *operator_d_bias(const Storage *outputs_grad, Storage *bias_grad);
