@@ -12,6 +12,9 @@
 Storage *operator_conv(const Storage *inputs, const Storage *filters,
                        Storage *cols, const int pad_h, const int pad_w,
                        const int stride_h, const int stride_w) {
+  CHECK_EQ(inputs->shape.size(), 4, "operator_conv: inputs shape error");
+  CHECK_EQ(filters->shape.size(), 4, "operator_conv: filters shape error");
+
   int width = *(inputs->shape.rbegin());
   int height = *(inputs->shape.rbegin() + 1);
   int channel_in = *(inputs->shape.rbegin() + 2);
@@ -21,7 +24,8 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
   int kernel_h = *(filters->shape.rbegin() + 1);
   int channel_out = *(filters->shape.rbegin() + 3);
 
-  CHECK_EQ(*(filters->shape.rbegin() + 2), channel_in, "operator_conv: size error");
+  CHECK_EQ(*(filters->shape.rbegin() + 2), channel_in,
+           "operator_conv: channel size error");
 
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
@@ -32,7 +36,8 @@ Storage *operator_conv(const Storage *inputs, const Storage *filters,
 
   // im2col
   // [batch_size*(C_in*k_h*k_w)*(height_col * width_col)]
-  cols->data.resize(batch_size * channel_in * kernel_h * kernel_w * height_col * width_col);
+  cols->data.resize(batch_size * channel_in * kernel_h * kernel_w * height_col *
+                    width_col);
   cols->reshape(
       {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col});
 
@@ -79,6 +84,12 @@ Storage *operator_d_conv(const Storage *outputs_grad, const Storage *inputs,
                          const Storage *cols, const Storage *filters,
                          const int pad_h, const int pad_w, const int stride_h,
                          const int stride_w, Storage *filters_grad) {
+  CHECK_EQ(outputs_grad->shape.size(), 4,
+           "operator_conv: outputs_grad shape error");
+  CHECK_EQ(inputs->shape.size(), 4, "operator_conv: inputs shape error");
+  CHECK_EQ(cols->shape.size(), 3, "operator_conv: cols shape error");
+  CHECK_EQ(filters->shape.size(), 4, "operator_conv: filters shape error");
+
   Storage *inputs_grad = new Storage(inputs->shape);
 
   int width = *(inputs->shape.rbegin());
@@ -161,7 +172,8 @@ __global__ void operator_conv_bias_h(const float *inputs, const float *bias,
 }
 
 Storage *operator_conv_bias(const Storage *inputs, const Storage *bias) {
-  CHECK_EQ(bias->data.size(), *(inputs->shape.begin() + 1), "operator_conv_bias: size error");
+  CHECK_EQ(bias->data.size(), *(inputs->shape.begin() + 1),
+           "operator_conv_bias: size error");
 
   const float *inputs_ptr = thrust::raw_pointer_cast(inputs->data.data());
   const float *bias_ptr = thrust::raw_pointer_cast(bias->data.data());
@@ -190,7 +202,7 @@ Storage *operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad) {
   return new Storage(*outputs_grad);
 }
 
-// C*H*W >> (C_out*k_h*k_w) * (height_col * width_col) 
+// C*H*W >> (C_out*k_h*k_w) * (height_col * width_col)
 __global__ void im2col_h(const int n, const float *data_im, const int height,
                          const int width, const int kernel_h,
                          const int kernel_w, const int pad_h, const int pad_w,
@@ -244,7 +256,7 @@ void im2col(const float *data_im, const int channels, const int height,
   CUDA_POST_KERNEL_CHECK;
 }
 
-// (C_out*k_h*k_w) * (height_col * width_col) >> C*H*W 
+// (C_out*k_h*k_w) * (height_col * width_col) >> C*H*W
 __global__ void col2im_h(const int n, const float *data_col, const int height,
                          const int width, const int channels,
                          const int kernel_h, const int kernel_w,

@@ -31,6 +31,7 @@ cmake --build
 
 ## References
 * [High Performance Convolutional Neural Networks for Document Processing](https://hal.inria.fr/file/index/docid/112631/filename/p1038112283956.pdf)
-* [Backpropagation In Convolutional Neural Networks](https://www.jefkine.com/general/2016/09/05/backpropagation-in-convolutional-neural-networks/)
+* [卷积神经网络(CNN)反向传播算法](https://www.cnblogs.com/pinard/p/6494810.html)
 * [矩阵求导术](https://zhuanlan.zhihu.com/p/24709748)
+* Caffe
 * CUDA Toolkit Documents

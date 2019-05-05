@@ -80,3 +80,17 @@ __global__ void operator_d_max_pool_h(
     bottom_diff[index] = gradient;
   }
 }
+
+Storage* operator_max_pool(const Storage* inputs, Storage* mask) {
+  CHECK_EQ(inputs->shape.size(), 4, "operator_max_pool: inputs shape error");
+
+
+}
+
+Storage* operator_d_max_pool(const Storage* output_grads, const Storage* inputs,
+                           const Storage* mask) {
+  CHECK_EQ(output_grads->shape.size(), 4, "operator_d_max_pool: output_grads shape error");
+  CHECK_EQ(inputs->shape.size(), 4, "operator_d_max_pool: inputs shape error");
+  CHECK_EQ(mask->shape.size(), 4, "operator_d_max_pool: mask shape error");
+
+}
