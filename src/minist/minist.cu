@@ -153,7 +153,7 @@ void Minist::init_weights() {
   this->weights["FC1_bias"]->xavier(64 * 2 * 2, 128);
 
   this->square_grads["FC1_weights"] = std::shared_ptr<Storage>(
-      new Storage(std::vector<int>{64 * 3 * 3, 128}, 1));
+      new Storage(std::vector<int>{64 * 2 * 2, 128}, 1));
   this->square_grads["FC1_bias"] =
       std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 128}, 1));
 
