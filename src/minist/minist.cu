@@ -5,6 +5,8 @@ Minist::Minist(DataSet* dataset) : dataset(dataset) {}
 void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
                    float beta) {
   // get data
+  int idx = 0;
+
   auto train_data = this->dataset->get_train_data(batch_size);
   std::vector<std::vector<float>>* images = &train_data.first;
   std::vector<unsigned char>* labels = &train_data.second;
@@ -21,9 +23,10 @@ void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
     int image_stride = 1 * dataset->get_height() * dataset->get_width();
     int label_stride = 10;
     for (int i = 0; i < size; i++) {
-      thrust::copy(images->begin(), images->end(),
+      thrust::copy((*images)[i].begin(), (*images)[i].end(),
                    images_tensor->data.begin() + i * image_stride);
-      labels_tensor->data[i * label_stride + (*labels)[i]] = 1;
+      int index = i * label_stride + (*labels)[i];
+      labels_tensor->data[index] = 1;
     }
 
     // forward
@@ -35,8 +38,8 @@ void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
     float accuracy = (float)corr_count / size;
     float nll_loss = this->outputs["NLLLoss"]->get_data()[0];
 
-    std::cout << "NLLLoss: " << nll_loss << ", Accuracy: " << accuracy
-              << std::endl;
+    std::cout << "Batch: " << idx << ", NLLLoss: " << nll_loss
+              << ", Train Accuracy: " << accuracy << std::endl;
 
     // backward & update
     this->network_backward(images_tensor.get(), labels_tensor.get());
@@ -44,19 +47,21 @@ void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
 
     // get data
     train_data = this->dataset->get_train_data(batch_size);
-    std::vector<std::vector<float>>* images = &train_data.first;
-    std::vector<unsigned char>* labels = &train_data.second;
+    images = &train_data.first;
+    labels = &train_data.second;
+    idx++;
   }
 }
 
 void Minist::test(int batch_size) {
+  int idx = 0;
   int total = 0;
   int corr_count = 0;
 
   // get data
-  auto train_data = this->dataset->get_test_data(batch_size);
-  std::vector<std::vector<float>>* images = &train_data.first;
-  std::vector<unsigned char>* labels = &train_data.second;
+  auto test_data = this->dataset->get_test_data(batch_size);
+  std::vector<std::vector<float>>* images = &test_data.first;
+  std::vector<unsigned char>* labels = &test_data.second;
 
   while (images->size() > 0) {
     // prepare ont-hot data
@@ -70,9 +75,10 @@ void Minist::test(int batch_size) {
     int image_stride = 1 * dataset->get_height() * dataset->get_width();
     int label_stride = 10;
     for (int i = 0; i < size; i++) {
-      thrust::copy(images->begin(), images->end(),
+      thrust::copy((*images)[i].begin(), (*images)[i].end(),
                    images_tensor->data.begin() + i * image_stride);
-      labels_tensor->data[i * label_stride + (*labels)[i]] = 1;
+      int index = i * label_stride + (*labels)[i];
+      labels_tensor->data[index] = 1;
     }
 
     // forward
@@ -80,17 +86,22 @@ void Minist::test(int batch_size) {
 
     // corr_count
     std::vector<float> predict_probs = this->outputs["LogSoftMax"]->get_data();
+    int temp = this->correct_count(predict_probs, label_stride, *labels);
+
+    // print test accuracy
+    std::cout << "Batch: " << idx
+              << ", Batch Accuracy: " << ((float)temp / size) << std::endl;
+    corr_count += temp;
     total += size;
-    corr_count += this->correct_count(predict_probs, label_stride, *labels);
 
     // get data
-    train_data = this->dataset->get_test_data(batch_size);
-    std::vector<std::vector<float>>* images = &train_data.first;
-    std::vector<unsigned char>* labels = &train_data.second;
+    test_data = this->dataset->get_test_data(batch_size);
+    images = &test_data.first;
+    labels = &test_data.second;
   }
 
   // print test accuracy
-  std::cout << "TEST Accuracy: " << ((float)corr_count / total) << std::endl;
+  std::cout << "Total Accuracy: " << ((float)corr_count / total) << std::endl;
 }
 
 void Minist::init_weights() {
