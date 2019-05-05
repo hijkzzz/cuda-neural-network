@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
@@ -35,6 +35,10 @@ __host__ __device__ void swap(T &a, T &b) {
   b = temp;
 }
 
+// explicit instantiation
+template __host__ __device__ void swap<int>(int &a, int &b);
+template __host__ __device__ void swap<float>(float &a, float &b);
+
 inline __host__ __device__ void index2loc(int index, const int *shape, int dims,
                                           int *loc) {
   for (int i = dims - 1; i >= 0; i--) {
@@ -53,7 +57,3 @@ inline __host__ __device__ int loc2index(const int *loc, const int *shape,
   }
   return index;
 }
-
-// explicit instantiation
-template __host__ __device__ void swap<int>(int &a, int &b);
-template __host__ __device__ void swap<float>(float &a, float &b);

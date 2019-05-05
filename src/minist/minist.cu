@@ -207,7 +207,7 @@ void Minist::network_forward(const Storage* images, const Storage* labels) {
                     this->outputs["Conv1_5x5_col"].get(), 0, 0, 1, 1));
   this->outputs["Conv1_5x5_bias"] = std::unique_ptr<Storage>(operator_bias(
       this->outputs["Conv1_5x5"].get(), this->weights["Conv1_5x5_bias"].get()));
-  this->outputs["Conv1_5x5_relu"] = std::unique_ptr<Storage>(
+  this->outputs["Conv1_5x5_bias_relu"] = std::unique_ptr<Storage>(
       operator_relu(this->outputs["Conv1_5x5_bias"].get()));
 
   // MaxPool1_2x2
@@ -215,7 +215,7 @@ void Minist::network_forward(const Storage* images, const Storage* labels) {
       std::unique_ptr<Storage>(new Storage({1, 1, 1}));
   std::unique_ptr<Storage>(new Storage({1, 1, 1}));
   this->outputs["MaxPool1_2x2"] = std::unique_ptr<Storage>(operator_max_pool(
-      this->outputs["Conv1_5x5_relu"].get(),
+      this->outputs["Conv1_5x5_bias_relu"].get(),
       this->outputs["MaxPool1_2x2_mask"].get(), 2, 2, 0, 0, 2, 2));
 
   // Conv2_5x5     16 * 32
@@ -227,7 +227,7 @@ void Minist::network_forward(const Storage* images, const Storage* labels) {
                     this->outputs["Conv2_5x5_col"].get(), 0, 0, 1, 1));
   this->outputs["Conv2_5x5_bias"] = std::unique_ptr<Storage>(operator_bias(
       this->outputs["Conv2_5x5"].get(), this->weights["Conv2_5x5_bias"].get()));
-  this->outputs["Conv2_5x5_relu"] = std::unique_ptr<Storage>(
+  this->outputs["Conv2_5x5_bias_relu"] = std::unique_ptr<Storage>(
       operator_relu(this->outputs["Conv2_5x5_bias"].get()));
 
   // MaxPool2_2x2
@@ -235,7 +235,7 @@ void Minist::network_forward(const Storage* images, const Storage* labels) {
       std::unique_ptr<Storage>(new Storage({1, 1, 1}));
   std::unique_ptr<Storage>(new Storage({1, 1, 1}));
   this->outputs["MaxPool2_2x2"] = std::unique_ptr<Storage>(operator_max_pool(
-      this->outputs["Conv2_5x5_relu"].get(),
+      this->outputs["Conv2_5x5_bias_relu"].get(),
       this->outputs["MaxPool2_2x2_mask"].get(), 2, 2, 0, 0, 2, 2));
 
   // Conv3_3x3     32 * 64
@@ -247,16 +247,16 @@ void Minist::network_forward(const Storage* images, const Storage* labels) {
                     this->outputs["Conv3_3x3_col"].get(), 0, 0, 1, 1));
   this->outputs["Conv3_3x3_bias"] = std::unique_ptr<Storage>(operator_bias(
       this->outputs["Conv3_3x3"].get(), this->weights["Conv3_3x3_bias"].get()));
-  this->outputs["Conv3_3x3_relu"] = std::unique_ptr<Storage>(
+  this->outputs["Conv3_3x3_bias_relu"] = std::unique_ptr<Storage>(
       operator_relu(this->outputs["Conv3_3x3_bias"].get()));
 
   // Reshape
-  int batch_size = *(this->outputs["Conv3_3x3_relu"]->shape.begin());
-  this->outputs["Conv3_3x3_relu"]->reshape({batch_size, 64 * 2 * 2});
+  int batch_size = *(this->outputs["Conv3_3x3_bias_relu"]->shape.begin());
+  this->outputs["Conv3_3x3_bias_relu"]->reshape({batch_size, 64 * 2 * 2});
 
   // FC1           (64 *  2 * 2) * 128
   this->outputs["FC1"] = std::unique_ptr<Storage>(
-      operator_linear(this->outputs["Conv3_3x3_relu"].get(),
+      operator_linear(this->outputs["Conv3_3x3_bias_relu"].get(),
                       this->weights["FC1_weights"].get()));
   this->outputs["FC1_bias"] = std::unique_ptr<Storage>(operator_bias(
       this->outputs["FC1"].get(), this->weights["FC1_bias"].get()));
@@ -291,29 +291,29 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
       this->grads["NLLLoss"].get(), this->outputs["FC2_bias_relu"].get(), 1));
 
   // FC2           128 * 10
-  this->grads["FC2"] = std::unique_ptr<Storage>(operator_d_relu(
+  this->grads["FC2_bias_relu"] = std::unique_ptr<Storage>(operator_d_relu(
       this->grads["LogSoftMax"].get(), this->outputs["FC2_bias"].get()));
 
   this->grads["FC2_bias"] = std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["FC2"] = std::unique_ptr<Storage>(
-      operator_d_bias(this->grads["FC2"].get(), this->grads["FC2_bias"].get()));
+  this->grads["FC2_bias_"] = std::unique_ptr<Storage>(
+      operator_d_bias(this->grads["FC2_bias_relu"].get(), this->grads["FC2_bias"].get()));
 
   this->grads["FC2_weights"] = std::unique_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["FC2"] = std::unique_ptr<Storage>(operator_d_linear(
-      this->grads["FC2"].get(), this->outputs["FC1_bias_relu"].get(),
+      this->grads["FC2_bias_"].get(), this->outputs["FC1_bias_relu"].get(),
       this->weights["FC2_weights"].get(), this->grads["FC2_weights"].get()));
 
   // FC1          (64 *  2 * 2) * 128
-  this->grads["FC1"] = std::unique_ptr<Storage>(operator_d_relu(
+  this->grads["FC1_bias_relu"] = std::unique_ptr<Storage>(operator_d_relu(
       this->grads["FC2"].get(), this->outputs["FC1_bias"].get()));
 
   this->grads["FC1_bias"] = std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["FC1"] = std::unique_ptr<Storage>(
-      operator_d_bias(this->grads["FC1"].get(), this->grads["FC1_bias"].get()));
+  this->grads["FC1_bias_"] = std::unique_ptr<Storage>(
+      operator_d_bias(this->grads["FC1_bias_relu"].get(), this->grads["FC1_bias"].get()));
 
   this->grads["FC1_weights"] = std::unique_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["FC1"] = std::unique_ptr<Storage>(operator_d_linear(
-      this->grads["FC1"].get(), this->outputs["Conv3_3x3_relu"].get(),
+      this->grads["FC1_bias_"].get(), this->outputs["Conv3_3x3_bias_relu"].get(),
       this->weights["FC1_weights"].get(), this->grads["FC1_weights"].get()));
 
   // Reshape
@@ -322,64 +322,64 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
   this->grads["FC1"]->reshape(top_shape);
 
   // Conv3_3x3     32 * 64
-  this->grads["Conv3_3x3"] = std::unique_ptr<Storage>(operator_d_relu(
+  this->grads["Conv3_3x3_bias_relu"] = std::unique_ptr<Storage>(operator_d_relu(
       this->grads["FC1"].get(), this->outputs["Conv3_3x3_bias"].get()));
 
   this->grads["Conv3_3x3_bias"] =
       std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["Conv3_3x3"] = std::unique_ptr<Storage>(operator_d_conv_bias(
-      this->grads["Conv3_3x3"].get(), this->grads["Conv3_3x3_bias"].get()));
+  this->grads["Conv3_3x3_bias_"] = std::unique_ptr<Storage>(operator_d_conv_bias(
+      this->grads["Conv3_3x3_bias_relu"].get(), this->grads["Conv3_3x3_bias"].get()));
 
   this->grads["Conv3_3x3_filters"] =
       std::unique_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["Conv3_3x3"] = std::unique_ptr<Storage>(operator_d_conv(
-      this->grads["Conv3_3x3"].get(), this->outputs["MaxPool2_2x2"].get(),
+      this->grads["Conv3_3x3_bias_"].get(), this->outputs["MaxPool2_2x2"].get(),
       this->outputs["Conv3_3x3_col"].get(),
       this->weights["Conv3_3x3_filters"].get(), 0, 0, 1, 1,
       this->grads["Conv3_3x3_filters"].get()));
 
   // MaxPool2_2x2
   this->grads["MaxPool2_2x2"] = std::unique_ptr<Storage>(operator_d_max_pool(
-      this->grads["Conv3_3x3"].get(), this->outputs["Conv2_5x5_relu"].get(),
+      this->grads["Conv3_3x3"].get(), this->outputs["Conv2_5x5_bias_relu"].get(),
       this->outputs["MaxPool2_2x2_mask"].get(), 2, 2, 0, 0, 2, 2));
 
   // Conv2_5x5     16 * 32
-  this->grads["Conv2_5x5"] = std::unique_ptr<Storage>(
+  this->grads["Conv2_5x5_bias_relu"] = std::unique_ptr<Storage>(
       operator_d_relu(this->grads["MaxPool2_2x2"].get(),
                       this->outputs["Conv2_5x5_bias"].get()));
 
   this->grads["Conv2_5x5_bias"] =
       std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["Conv2_5x5"] = std::unique_ptr<Storage>(operator_d_conv_bias(
-      this->grads["Conv2_5x5"].get(), this->grads["Conv2_5x5_bias"].get()));
+  this->grads["Conv2_5x5_bias_"] = std::unique_ptr<Storage>(operator_d_conv_bias(
+      this->grads["Conv2_5x5_bias_relu"].get(), this->grads["Conv2_5x5_bias"].get()));
 
   this->grads["Conv2_5x5_filters"] =
       std::unique_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["Conv2_5x5"] = std::unique_ptr<Storage>(operator_d_conv(
-      this->grads["Conv2_5x5"].get(), this->outputs["MaxPool1_2x2"].get(),
+      this->grads["Conv2_5x5_bias_"].get(), this->outputs["MaxPool1_2x2"].get(),
       this->outputs["Conv2_5x5_col"].get(),
       this->weights["Conv2_5x5_filters"].get(), 0, 0, 1, 1,
       this->grads["Conv2_5x5_filters"].get()));
 
   // MaxPool1_2x2
   this->grads["MaxPool1_2x2"] = std::unique_ptr<Storage>(operator_d_max_pool(
-      this->grads["Conv2_5x5"].get(), this->outputs["Conv1_5x5_relu"].get(),
+      this->grads["Conv2_5x5"].get(), this->outputs["Conv1_5x5_bias_relu"].get(),
       this->outputs["MaxPool1_2x2_mask"].get(), 2, 2, 0, 0, 2, 2));
 
   // Conv1_5x5     1 * 16
-  this->grads["Conv1_5x5"] = std::unique_ptr<Storage>(
+  this->grads["Conv1_5x5_bias_relu"] = std::unique_ptr<Storage>(
       operator_d_relu(this->grads["MaxPool1_2x2"].get(),
                       this->outputs["Conv1_5x5_bias"].get()));
 
   this->grads["Conv1_5x5_bias"] =
       std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["Conv1_5x5"] = std::unique_ptr<Storage>(operator_d_conv_bias(
-      this->grads["Conv1_5x5"].get(), this->grads["Conv1_5x5_bias"].get()));
+  this->grads["Conv1_5x5_bias_"] = std::unique_ptr<Storage>(operator_d_conv_bias(
+      this->grads["Conv1_5x5_bias_relu"].get(), this->grads["Conv1_5x5_bias"].get()));
 
   this->grads["Conv1_5x5_filters"] =
       std::unique_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["Conv1_5x5"] = std::unique_ptr<Storage>(
-      operator_d_conv(this->grads["Conv1_5x5"].get(), images,
+      operator_d_conv(this->grads["Conv1_5x5_bias_"].get(), images,
                       this->outputs["Conv1_5x5_col"].get(),
                       this->weights["Conv1_5x5_filters"].get(), 0, 0, 1, 1,
                       this->grads["Conv1_5x5_filters"].get()));
