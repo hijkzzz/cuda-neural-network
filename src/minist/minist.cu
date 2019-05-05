@@ -2,9 +2,96 @@
 
 Minist::Minist(DataSet* dataset) : dataset(dataset) {}
 
-void Minist::train(float learing_rate, float l2, int batch_size, int epochs) {}
+void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
+                   float beta) {
+  // get data
+  auto train_data = this->dataset->get_train_data(batch_size);
+  std::vector<std::vector<float>>* images = &train_data.first;
+  std::vector<unsigned char>* labels = &train_data.second;
 
-void Minist::test(int batch_size) {}
+  while (images->size() > 0) {
+    // prepare ont-hot data
+    int size = images->size();
+
+    std::unique_ptr<Storage> images_tensor(
+        new Storage({size, 1, dataset->get_height(), dataset->get_width()}, 0));
+    std::unique_ptr<Storage> labels_tensor(
+        new Storage(std::vector<int>{size, 10}, 0));
+
+    int image_stride = 1 * dataset->get_height() * dataset->get_width();
+    int label_stride = 10;
+    for (int i = 0; i < size; i++) {
+      thrust::copy(images->begin(), images->end(),
+                   images_tensor->data.begin() + i * image_stride);
+      labels_tensor->data[i * label_stride + (*labels)[i]] = 1;
+    }
+
+    // forward
+    this->network_forward(images_tensor.get(), labels_tensor.get());
+
+    // print nll loss and accuracy
+    std::vector<float> predict_probs = this->outputs["LogSoftMax"]->get_data();
+    int corr_count = this->correct_count(predict_probs, label_stride, *labels);
+    float accuracy = (float)corr_count / size;
+    float nll_loss = this->outputs["NLLLoss"]->get_data()[0];
+
+    std::cout << "NLLLoss: " << nll_loss << ", Accuracy: " << accuracy
+              << std::endl;
+
+    // backward & update
+    this->network_backward(images_tensor.get(), labels_tensor.get());
+    this->update_weights(learing_rate, l2, beta);
+
+    // get data
+    train_data = this->dataset->get_train_data(batch_size);
+    std::vector<std::vector<float>>* images = &train_data.first;
+    std::vector<unsigned char>* labels = &train_data.second;
+  }
+}
+
+void Minist::test(int batch_size) {
+  int total = 0;
+  int corr_count = 0;
+
+  // get data
+  auto train_data = this->dataset->get_test_data(batch_size);
+  std::vector<std::vector<float>>* images = &train_data.first;
+  std::vector<unsigned char>* labels = &train_data.second;
+
+  while (images->size() > 0) {
+    // prepare ont-hot data
+    int size = images->size();
+
+    std::unique_ptr<Storage> images_tensor(
+        new Storage({size, 1, dataset->get_height(), dataset->get_width()}, 0));
+    std::unique_ptr<Storage> labels_tensor(
+        new Storage(std::vector<int>{size, 10}, 0));
+
+    int image_stride = 1 * dataset->get_height() * dataset->get_width();
+    int label_stride = 10;
+    for (int i = 0; i < size; i++) {
+      thrust::copy(images->begin(), images->end(),
+                   images_tensor->data.begin() + i * image_stride);
+      labels_tensor->data[i * label_stride + (*labels)[i]] = 1;
+    }
+
+    // forward
+    this->network_forward(images_tensor.get(), labels_tensor.get());
+
+    // corr_count
+    std::vector<float> predict_probs = this->outputs["LogSoftMax"]->get_data();
+    total += size;
+    corr_count += this->correct_count(predict_probs, label_stride, *labels);
+
+    // get data
+    train_data = this->dataset->get_test_data(batch_size);
+    std::vector<std::vector<float>>* images = &train_data.first;
+    std::vector<unsigned char>* labels = &train_data.second;
+  }
+
+  // print test accuracy
+  std::cout << "TEST Accuracy: " << ((float)corr_count / total) << std::endl;
+}
 
 void Minist::init_weights() {
   // Conv1_5x5     1 * 16
@@ -15,6 +102,11 @@ void Minist::init_weights() {
   this->weights["Conv1_5x5_filters"]->xavier(1 * 28 * 28, 16 * 24 * 24);
   this->weights["Conv1_5x5_bias"]->xavier(1 * 28 * 28, 16 * 24 * 24);
 
+  this->square_grads["Conv1_5x5_filters"] =
+      std::shared_ptr<Storage>(new Storage({16, 1, 5, 5}, 1));
+  this->square_grads["Conv1_5x5_bias"] =
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 16}, 1));
+
   // Conv2_5x5     16 * 32
   this->weights["Conv2_5x5_filters"] =
       std::shared_ptr<Storage>(new Storage({32, 16, 5, 5}));
@@ -22,6 +114,11 @@ void Minist::init_weights() {
       std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 32}));
   this->weights["Conv2_5x5_filters"]->xavier(16 * 14 * 14, 32 * 10 * 10);
   this->weights["Conv2_5x5_bias"]->xavier(16 * 14 * 14, 32 * 10 * 10);
+
+  this->square_grads["Conv2_5x5_filters"] =
+      std::shared_ptr<Storage>(new Storage({32, 16, 5, 5}, 1));
+  this->square_grads["Conv2_5x5_bias"] =
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 32}, 1));
 
   // Conv3_3x3     32 * 64
   this->weights["Conv3_3x3_filters"] =
@@ -31,13 +128,23 @@ void Minist::init_weights() {
   this->weights["Conv3_3x3_filters"]->xavier(32 * 5 * 5, 64 * 3 * 3);
   this->weights["Conv3_3x3_bias"]->xavier(32 * 5 * 5, 64 * 3 * 3);
 
-  // FC1           (64 *  2 * 2) * 128
+  this->square_grads["Conv3_3x3_filters"] =
+      std::shared_ptr<Storage>(new Storage({64, 32, 3, 3}, 1));
+  this->square_grads["Conv3_3x3_bias"] =
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 64}, 1));
+
+  // FC1           (64 *  3 * 3) * 128
   this->weights["FC1_weights"] =
       std::shared_ptr<Storage>(new Storage(std::vector<int>{64 * 3 * 3, 128}));
   this->weights["FC1_bias"] =
       std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 128}));
   this->weights["FC1_weights"]->xavier(64 * 3 * 3, 128);
   this->weights["FC1_bias"]->xavier(64 * 3 * 3, 128);
+
+  this->square_grads["FC1_weights"] = std::shared_ptr<Storage>(
+      new Storage(std::vector<int>{64 * 3 * 3, 128}, 1));
+  this->square_grads["FC1_bias"] =
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 128}, 1));
 
   // FC2           128 * 10
   this->weights["FC2_weights"] =
@@ -46,6 +153,25 @@ void Minist::init_weights() {
       std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 10}));
   this->weights["FC2_weights"]->xavier(128, 10);
   this->weights["FC2_bias"]->xavier(128, 10);
+
+  this->square_grads["FC2_weights"] =
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{128, 10}, 1));
+  this->square_grads["FC2_bias"] =
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 10}, 1));
+}
+
+void Minist::update_weights(float learing_rate, float l2, float beta) {
+  for (auto iter = this->weights.begin(); iter != this->weights.end(); iter++) {
+    std::string weights_name = iter->first;
+
+    std::shared_ptr<Storage>& weights_ptr = iter->second;
+    std::shared_ptr<Storage>& square_grad_ptr =
+        this->square_grads[weights_name];
+    std::shared_ptr<Storage>& grad_ptr = this->grads[weights_name];
+
+    rmsprop_update(square_grad_ptr.get(), weights_ptr.get(), grad_ptr.get(),
+                   learing_rate, l2, beta);
+  }
 }
 
 void Minist::network_forward(const Storage* images, const Storage* labels) {
@@ -167,8 +293,8 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
       this->weights["FC1_weights"].get(), this->grads["FC1_weights"].get()));
 
   // Reshape
-  std::vector<int> top_shape(this->outputs["Conv3_3x3_relu"]->shape.begin(),
-                             this->outputs["Conv3_3x3_relu"]->shape.end());
+  std::vector<int> top_shape(this->outputs["Conv3_3x3"]->shape.begin(),
+                             this->outputs["Conv3_3x3"]->shape.end());
   this->grads["FC1"]->reshape(top_shape);
 
   // Conv3_3x3     32 * 64
@@ -190,7 +316,7 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
 
   // MaxPool2_2x2
   this->grads["MaxPool2_2x2"] = std::shared_ptr<Storage>(operator_d_max_pool(
-      this->grads["Conv3_3x3"].get(), this->outputs["Conv2_5x5_bias"].get(),
+      this->grads["Conv3_3x3"].get(), this->outputs["Conv2_5x5_relu"].get(),
       this->outputs["MaxPool2_2x2_mask"].get(), 2, 2, 0, 0, 2, 2));
 
   // Conv2_5x5     16 * 32
@@ -213,13 +339,13 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
 
   // MaxPool1_2x2
   this->grads["MaxPool1_2x2"] = std::shared_ptr<Storage>(operator_d_max_pool(
-      this->grads["Conv2_5x5"].get(), this->outputs["Conv1_5x5_bias"].get(),
+      this->grads["Conv2_5x5"].get(), this->outputs["Conv1_5x5_relu"].get(),
       this->outputs["MaxPool1_2x2_mask"].get(), 2, 2, 0, 0, 2, 2));
 
   // Conv1_5x5     1 * 16
   this->grads["Conv1_5x5"] = std::shared_ptr<Storage>(
-    operator_d_relu(this->grads["MaxPool1_2x2"].get(),
-                    this->outputs["Conv1_5x5_bias"].get()));
+      operator_d_relu(this->grads["MaxPool1_2x2"].get(),
+                      this->outputs["Conv1_5x5_bias"].get()));
 
   this->grads["Conv1_5x5_bias"] =
       std::shared_ptr<Storage>(new Storage({1, 1, 1}));
@@ -228,15 +354,29 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
 
   this->grads["Conv1_5x5_weights"] =
       std::shared_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["Conv1_5x5"] = std::shared_ptr<Storage>(operator_d_conv(
-      this->grads["Conv1_5x5"].get(), images,
-      this->outputs["Conv1_5x5_col"].get(),
-      this->weights["Conv1_5x5_weights"].get(), 0, 0, 1, 1,
-      this->grads["Conv1_5x5_weights"].get()));
+  this->grads["Conv1_5x5"] = std::shared_ptr<Storage>(
+      operator_d_conv(this->grads["Conv1_5x5"].get(), images,
+                      this->outputs["Conv1_5x5_col"].get(),
+                      this->weights["Conv1_5x5_weights"].get(), 0, 0, 1, 1,
+                      this->grads["Conv1_5x5_weights"].get()));
 }
 
-int Minist::correct_count(const std::vector<std::vector<float>>& predict_probs,
-                          const std::vector<int>& ground_truth) {
+int Minist::correct_count(const std::vector<float>& predict_probs,
+                          int label_stride,
+                          const std::vector<unsigned char>& ground_truth) {
+  int count = 0;
+  for (int i = 0; i < ground_truth.size(); i++) {
+    int max_pos = -1;
+    float max_value = -FLT_MAX;
+    for (int j = 0; j < label_stride; j++) {
+      int index = i * label_stride + j;
+      if (predict_probs[index] > max_value) {
+        max_value = predict_probs[index];
+        max_pos = j;
+      }
+    }
 
-  return 0;
+    if (max_pos == ground_truth[i]) ++count;
+  }
+  return count;
 }

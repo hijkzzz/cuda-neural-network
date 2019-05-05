@@ -20,7 +20,8 @@ class Minist {
  public:
   Minist(DataSet* dataset);
 
-  void train(float learing_rate, float l2, int batch_size, int epochs);
+  void train(float learing_rate, float l2, int batch_size, int epochs,
+             float beta);
   void test(int batch_size);
 
  private:
@@ -32,13 +33,16 @@ class Minist {
   // FC1           (64 *  3 * 3) * 128
   // FC2           128 * 10
   // SoftMax
+
   void init_weights();
+  void update_weights(float learing_rate, float l2, float beta);
+
   void network_forward(const Storage* images, const Storage* labels);
   void network_backward(const Storage* images, const Storage* labels);
 
-
-  int correct_count(const std::vector<std::vector<float>>& predict_probs,
-                           const std::vector<int>& ground_truth); // return correct count
+  int correct_count(
+      const std::vector<float>& predict_probs, int label_stride,
+      const std::vector<unsigned char>& ground_truth);  // return correct count
 
   std::unordered_map<std::string, std::shared_ptr<Storage>>
       weights;  // Layer weights

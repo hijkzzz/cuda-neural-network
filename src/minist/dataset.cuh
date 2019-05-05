@@ -15,6 +15,9 @@ class DataSet {
   std::pair<std::vector<std::vector<float>>, std::vector<unsigned char>>
   get_test_data(int batch_size);
 
+  int get_height() { return this->height; }
+  int get_width() { return this->width; }
+
  private:
   unsigned int reverse_int(unsigned int i);  // big endian
   void read_images(std::string file_name,
@@ -28,4 +31,7 @@ class DataSet {
   std::vector<std::vector<float>> test_data;
   std::vector<unsigned char> test_label;
   int test_data_index;
+
+  int height;
+  int width;
 };

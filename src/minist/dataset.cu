@@ -80,20 +80,25 @@ void DataSet::read_images(std::string file_name,
     n_rows = this->reverse_int(n_rows);
     n_cols = this->reverse_int(n_cols);
 
+    std::cout << file_name << std::endl;
     std::cout << "magic number = " << magic_number << std::endl;
     std::cout << "number of images = " << number_of_images << std::endl;
     std::cout << "rows = " << n_rows << std::endl;
     std::cout << "cols = " << n_cols << std::endl;
 
+    this->height = n_rows;
+    this->width = n_cols;
+
+    std::vector<unsigned char> image(n_rows * n_cols);
+    std::vector<float> normalized_image(n_rows * n_cols);
+
     for (int i = 0; i < number_of_images; i++) {
-      std::vector<unsigned char> image(n_rows * n_cols);
       file.read((char*)&image[0], sizeof(unsigned char) * n_rows * n_cols);
 
-      std::vector<float> normalized_image(n_rows * n_cols);
       for (int i = 0; i < n_rows * n_cols; i++) {
         normalized_image[i] = (float)image[i] / 255 - 0.5;
       }
-      output.emplace_back(std::move(normalized_image));
+      output.push_back(normalized_image);
     }
   }
 }
@@ -107,6 +112,7 @@ void DataSet::read_labels(std::string file_name,
     file.read((char*)&magic_number, sizeof(magic_number));
     file.read((char*)&number_of_images, sizeof(number_of_images));
 
+    std::cout << file_name << std::endl;
     magic_number = this->reverse_int(magic_number);
     number_of_images = this->reverse_int(number_of_images);
     std::cout << "magic number = " << magic_number << std::endl;
