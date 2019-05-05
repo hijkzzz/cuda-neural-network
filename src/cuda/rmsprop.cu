@@ -63,7 +63,9 @@ void rmsprop_update(Storage *square_grads, Storage *weights,
   thrust::device_vector<float> new_square_grads(reduce_grads->data.size());
   thrust::transform(square_grads->data.begin(), square_grads->data.end(),
                     l2_grads.begin(), new_square_grads.begin(), sgf);
-  square_grads->data = std::move(new_square_grads);
+
+  thrust::copy(new_square_grads.begin(), new_square_grads.end(),
+               square_grads->data.begin());
 
   rms_grads_functor gf(learning_rate);
   thrust::device_vector<float> rms_grads(reduce_grads->data.size());
@@ -75,7 +77,8 @@ void rmsprop_update(Storage *square_grads, Storage *weights,
   thrust::transform(weights->data.begin(), weights->data.end(),
                     rms_grads.begin(), new_weights.begin(),
                     thrust::minus<float>());
-  weights->data = std::move(new_weights);
+
+  thrust::copy(new_weights.begin(), new_weights.end(), weights->data.begin());
 
   // clean
   if (reduce) {

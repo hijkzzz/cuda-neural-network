@@ -1,4 +1,4 @@
-#include <linear.cuh>
+﻿#include <linear.cuh>
 #include <memory>
 
 Storage *operator_linear(const Storage *inputs, const Storage *weights) {
@@ -16,7 +16,7 @@ Storage *operator_d_linear(const Storage *outputs_grad, const Storage *inputs,
   Storage *inputs_grad = operator_matmul(outputs_grad, weights_transpose.get());
   std::unique_ptr<Storage> w_grad(
       operator_matmul(inputs_transpose.get(), outputs_grad));
-  *weights_grad = std::move(*w_grad.get());
+  *weights_grad = *w_grad.get();
 
   return inputs_grad;
 }
