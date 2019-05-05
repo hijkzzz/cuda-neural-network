@@ -53,7 +53,7 @@ Storage::Storage(const thrust::device_vector<int> &_shape,
   this->shape.resize(_shape.size());
   thrust::copy(_shape.begin(), _shape.end(), this->shape.begin());
 
-  this->data = std::move(data);
+  this->data = std::move(_data);
   this->check_size();
 }
 
