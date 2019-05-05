@@ -3,13 +3,18 @@
 #include <algorithm>
 #include <fstream>
 
-DataSet::DataSet(std::string minist_data_path) {
+DataSet::DataSet(std::string minist_data_path, bool shuffle) {
   // train data
   this->read_images(minist_data_path + "/train-images.idx3-ubyte",
                     this->train_data);
   this->read_labels(minist_data_path + "/train-labels.idx1-ubyte",
                     this->train_label);
   this->train_data_index = 0;
+
+  // TODO: shuffle train data
+  if (shuffle) {
+    
+  }
 
   // test data
   this->read_images(minist_data_path + "/t10k-images.idx3-ubyte",

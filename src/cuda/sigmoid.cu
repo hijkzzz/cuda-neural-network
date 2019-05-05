@@ -24,8 +24,8 @@ struct sigmoid_d_functor {
 
 // Y = sigmoid(X)
 // dL/dX = sigmoid'(X) element_mul dL/dY
-Storage *operator_d_sigmoid(const Storage *input1,
-                            const Storage *outputs_grad) {
+Storage *operator_d_sigmoid(const Storage *outputs_grad,
+                            const Storage *input1) {
   Storage *d_sigmoid = new Storage(input1->shape);
   sigmoid_d_functor f;
   thrust::transform(input1->data.begin(), input1->data.end(),

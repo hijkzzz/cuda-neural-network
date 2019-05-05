@@ -23,7 +23,7 @@ struct relu_d_functor {
 
 // Y = relu(X)
 // dL/dX = relu'(X) element_mul dL/dY
-Storage *operator_d_relu(const Storage *input1, const Storage *outputs_grad) {
+Storage *operator_d_relu(const Storage *outputs_grad, const Storage *input1) {
   Storage *d_relu = new Storage(input1->shape);
   relu_d_functor f;
   thrust::transform(input1->data.begin(), input1->data.end(),

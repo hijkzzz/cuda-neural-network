@@ -4,4 +4,5 @@
 
 Storage *operator_sigmoid(const Storage *input1);
 
-Storage *operator_d_sigmoid(const Storage *input1, const Storage *outputs_grad);
+Storage *operator_d_sigmoid(const Storage *outputs_grad,
+                            const Storage *input1);

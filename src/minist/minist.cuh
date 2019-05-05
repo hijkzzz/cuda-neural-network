@@ -7,7 +7,9 @@
 
 #include <blas.cuh>
 #include <conv.cuh>
+#include <dataset.cuh>
 #include <linear.cuh>
+#include <max_pool.cuh>
 #include <nll_loss.cuh>
 #include <relu.cuh>
 #include <rmsprop.cuh>
@@ -16,32 +18,36 @@
 
 class Minist {
  public:
-  void train(std::string train_data_path, std::string train_label_path,
-             float learing_rate, float l2, int batch_size, int epochs);
-  void test(std::string test_data_path, std::string test_label_path,
-            int batch_size);
+  Minist(DataSet* dataset);
+
+  void train(float learing_rate, float l2, int batch_size, int epochs);
+  void test(int batch_size);
 
  private:
   // Conv1_5x5     1 * 16
-  // MaxPool_2x2
+  // MaxPool1_2x2
   // Conv2_5x5     16 * 32
-  // MaxPool_2x2
+  // MaxPool2_2x2
   // Conv3_3x3     32 * 64
-  // FC1           (64 *  2 * 2) * 128
+  // FC1           (64 *  3 * 3) * 128
   // FC2           128 * 10
   // SoftMax
-  void init_network();
-  void network_forward();
-  void network_backward();
+  void init_weights();
+  void network_forward(const Storage* images, const Storage* labels);
+  void network_backward(const Storage* images, const Storage* labels);
+
+
+  int correct_count(const std::vector<std::vector<float>>& predict_probs,
+                           const std::vector<int>& ground_truth); // return correct count
 
   std::unordered_map<std::string, std::shared_ptr<Storage>>
       weights;  // Layer weights
   std::unordered_map<std::string, std::shared_ptr<Storage>>
-      parameters;  // Layer parameters
-  std::unordered_map<std::string, std::shared_ptr<Storage>>
       outputs;  // Layer outputs
   std::unordered_map<std::string, std::shared_ptr<Storage>>
-      grads;  // Layer grads and Weights grads
+      grads;  // Layer grads and Weight grads
   std::unordered_map<std::string, std::shared_ptr<Storage>>
       square_grads;  // for RMSProp
+
+  DataSet* dataset;
 };
