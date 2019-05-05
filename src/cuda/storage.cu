@@ -1,4 +1,4 @@
-#include <storage.cuh>
+﻿#include <storage.cuh>
 #include <utils.cuh>
 
 #include <curand_kernel.h>
@@ -16,20 +16,7 @@ Storage::Storage(std::vector<int> shape, float value)
 }
 
 Storage::Storage(std::vector<int> shape, const std::vector<float> &data)
-    : shape(shape), data(data.begin(), data.end()) {
-  this->check_size();
-}
-
-Storage::Storage(thrust::device_vector<int> shape, float value) : shape(shape) {
-  int size = thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
-                            thrust::multiplies<int>());
-  this->data.resize(size, value);
-}
-
-Storage::Storage(thrust::device_vector<int> shape,
-                 thrust::device_vector<float> &&data)
-    : shape(shape) {
-  this->data = std::move(data);
+    : shape(shape.begin(), shape.end()), data(data.begin(), data.end()) {
   this->check_size();
 }
 
@@ -37,6 +24,20 @@ Storage::Storage(std::vector<int> shape,
                  thrust::device_vector<float>::const_iterator begin,
                  thrust::device_vector<float>::const_iterator end)
     : shape(shape.begin(), shape.end()), data(begin, end) {
+  this->check_size();
+}
+
+Storage::Storage(const thrust::device_vector<int> &shape, float value)
+    : shape(shape.begin(), shape.end()) {
+  int size = thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
+                            thrust::multiplies<int>());
+  this->data.resize(size, value);
+}
+
+Storage::Storage(const thrust::device_vector<int> &shape,
+                 thrust::device_vector<float> &&data)
+    : shape(shape.begin(), shape.end()) {
+  this->data = std::move(data);
   this->check_size();
 }
 

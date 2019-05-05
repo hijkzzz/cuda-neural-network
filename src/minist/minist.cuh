@@ -44,13 +44,13 @@ class Minist {
       const std::vector<float>& predict_probs, int label_stride,
       const std::vector<unsigned char>& ground_truth);  // return correct count
 
-  std::unordered_map<std::string, std::shared_ptr<Storage>>
+  std::unordered_map<std::string, std::unique_ptr<Storage>>
       weights;  // Layer weights
-  std::unordered_map<std::string, std::shared_ptr<Storage>>
+  std::unordered_map<std::string, std::unique_ptr<Storage>>
       outputs;  // Layer outputs
-  std::unordered_map<std::string, std::shared_ptr<Storage>>
+  std::unordered_map<std::string, std::unique_ptr<Storage>>
       grads;  // Layer grads and Weight grads
-  std::unordered_map<std::string, std::shared_ptr<Storage>>
+  std::unordered_map<std::string, std::unique_ptr<Storage>>
       square_grads;  // for RMSProp
 
   DataSet* dataset;
