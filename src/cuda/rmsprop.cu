@@ -1,4 +1,4 @@
-#include <rmsprop.cuh>
+﻿#include <rmsprop.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/transform.h>
@@ -39,13 +39,16 @@ struct l2_grads_functor {
 void rmsprop_update(Storage *square_grads, Storage *weights,
                     const Storage *grads, float learning_rate, float l2,
                     float beta) {
-  // reduce to first sample
-  std::unique_ptr<Storage> reduce_grads(operator_sum(grads, 0));
+  // need reduce
+  const Storage *reduce_grads = grads;
+  if (grads->data.size() > weights->data.size()) {
+    reduce_grads = operator_sum(grads, 0);
+  }
 
   CHECK_EQ(square_grads->data.size(), reduce_grads->data.size(),
-           "RMSProp: grads size error");
+           "RMSProp: grads size error 1");
   CHECK_EQ(weights->data.size(), reduce_grads->data.size(),
-           "RMSProp: grads size error");
+           "RMSProp: grads size error 2");
 
   // add L2 weights grads
   l2_grads_functor l2f(l2);
@@ -71,4 +74,9 @@ void rmsprop_update(Storage *square_grads, Storage *weights,
                     rms_grads.begin(), new_weights.begin(),
                     thrust::minus<float>());
   weights->data = std::move(new_weights);
+
+  // clean
+  if (grads->data.size() > weights->data.size()) {
+    delete reduce_grads;
+  }
 }
