@@ -1,6 +1,6 @@
 #include <minist.cuh>
 
-Minist::Minist(DataSet* dataset) : dataset(dataset) {}
+Minist::Minist(DataSet* dataset) : dataset(dataset) { this->init_weights(); }
 
 void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
                    float beta) {
@@ -123,8 +123,8 @@ void Minist::init_weights() {
       std::shared_ptr<Storage>(new Storage({32, 16, 5, 5}));
   this->weights["Conv2_5x5_bias"] =
       std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 32}));
-  this->weights["Conv2_5x5_filters"]->xavier(16 * 14 * 14, 32 * 10 * 10);
-  this->weights["Conv2_5x5_bias"]->xavier(16 * 14 * 14, 32 * 10 * 10);
+  this->weights["Conv2_5x5_filters"]->xavier(16 * 12 * 12, 32 * 8 * 8);
+  this->weights["Conv2_5x5_bias"]->xavier(16 * 12 * 12, 32 * 8 * 8);
 
   this->square_grads["Conv2_5x5_filters"] =
       std::shared_ptr<Storage>(new Storage({32, 16, 5, 5}, 1));
@@ -136,8 +136,8 @@ void Minist::init_weights() {
       std::shared_ptr<Storage>(new Storage({64, 32, 3, 3}));
   this->weights["Conv3_3x3_bias"] =
       std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 64}));
-  this->weights["Conv3_3x3_filters"]->xavier(32 * 5 * 5, 64 * 3 * 3);
-  this->weights["Conv3_3x3_bias"]->xavier(32 * 5 * 5, 64 * 3 * 3);
+  this->weights["Conv3_3x3_filters"]->xavier(32 * 4 * 4, 64 * 2 * 2);
+  this->weights["Conv3_3x3_bias"]->xavier(32 * 4 * 4, 64 * 2 * 2);
 
   this->square_grads["Conv3_3x3_filters"] =
       std::shared_ptr<Storage>(new Storage({64, 32, 3, 3}, 1));
@@ -146,11 +146,11 @@ void Minist::init_weights() {
 
   // FC1           (64 *  3 * 3) * 128
   this->weights["FC1_weights"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{64 * 3 * 3, 128}));
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{64 * 2 * 2, 128}));
   this->weights["FC1_bias"] =
       std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 128}));
-  this->weights["FC1_weights"]->xavier(64 * 3 * 3, 128);
-  this->weights["FC1_bias"]->xavier(64 * 3 * 3, 128);
+  this->weights["FC1_weights"]->xavier(64 * 2 * 2, 128);
+  this->weights["FC1_bias"]->xavier(64 * 2 * 2, 128);
 
   this->square_grads["FC1_weights"] = std::shared_ptr<Storage>(
       new Storage(std::vector<int>{64 * 3 * 3, 128}, 1));
@@ -238,10 +238,10 @@ void Minist::network_forward(const Storage* images, const Storage* labels) {
       operator_relu(this->outputs["Conv3_3x3_bias"].get()));
 
   // Reshape
-  int batch_size = *this->outputs["Conv3_3x3_relu"]->shape.begin();
-  this->outputs["Conv3_3x3_relu"]->reshape({batch_size, 64 * 3 * 3});
+  int batch_size = *(this->outputs["Conv3_3x3_relu"]->shape.begin());
+  this->outputs["Conv3_3x3_relu"]->reshape({batch_size, 64 * 2 * 2});
 
-  // FC1           (64 *  3 * 3) * 128
+  // FC1           (64 *  2 * 2) * 128
   this->outputs["FC1"] = std::shared_ptr<Storage>(
       operator_linear(this->outputs["Conv3_3x3_relu"].get(),
                       this->weights["FC1_weights"].get()));
@@ -290,7 +290,7 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
       this->grads["FC2"].get(), this->outputs["FC1_bias_relu"].get(),
       this->weights["FC2_weights"].get(), this->grads["FC2_weights"].get()));
 
-  // FC1          (64 *  3 * 3) * 128
+  // FC1          (64 *  2 * 2) * 128
   this->grads["FC1"] = std::shared_ptr<Storage>(operator_d_relu(
       this->grads["FC2"].get(), this->outputs["FC1_bias"].get()));
 
@@ -317,13 +317,13 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
   this->grads["Conv3_3x3"] = std::shared_ptr<Storage>(operator_d_conv_bias(
       this->grads["Conv3_3x3"].get(), this->grads["Conv3_3x3_bias"].get()));
 
-  this->grads["Conv3_3x3_weights"] =
+  this->grads["Conv3_3x3_filters"] =
       std::shared_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["Conv3_3x3"] = std::shared_ptr<Storage>(operator_d_conv(
       this->grads["Conv3_3x3"].get(), this->outputs["MaxPool2_2x2"].get(),
       this->outputs["Conv3_3x3_col"].get(),
-      this->weights["Conv3_3x3_weights"].get(), 0, 0, 1, 1,
-      this->grads["Conv3_3x3_weights"].get()));
+      this->weights["Conv3_3x3_filters"].get(), 0, 0, 1, 1,
+      this->grads["Conv3_3x3_filters"].get()));
 
   // MaxPool2_2x2
   this->grads["MaxPool2_2x2"] = std::shared_ptr<Storage>(operator_d_max_pool(
@@ -340,13 +340,13 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
   this->grads["Conv2_5x5"] = std::shared_ptr<Storage>(operator_d_conv_bias(
       this->grads["Conv2_5x5"].get(), this->grads["Conv2_5x5_bias"].get()));
 
-  this->grads["Conv2_5x5_weights"] =
+  this->grads["Conv2_5x5_filters"] =
       std::shared_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["Conv2_5x5"] = std::shared_ptr<Storage>(operator_d_conv(
       this->grads["Conv2_5x5"].get(), this->outputs["MaxPool1_2x2"].get(),
       this->outputs["Conv2_5x5_col"].get(),
-      this->weights["Conv2_5x5_weights"].get(), 0, 0, 1, 1,
-      this->grads["Conv2_5x5_weights"].get()));
+      this->weights["Conv2_5x5_filters"].get(), 0, 0, 1, 1,
+      this->grads["Conv2_5x5_filters"].get()));
 
   // MaxPool1_2x2
   this->grads["MaxPool1_2x2"] = std::shared_ptr<Storage>(operator_d_max_pool(
@@ -363,13 +363,13 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
   this->grads["Conv1_5x5"] = std::shared_ptr<Storage>(operator_d_conv_bias(
       this->grads["Conv1_5x5"].get(), this->grads["Conv1_5x5_bias"].get()));
 
-  this->grads["Conv1_5x5_weights"] =
+  this->grads["Conv1_5x5_filters"] =
       std::shared_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["Conv1_5x5"] = std::shared_ptr<Storage>(
       operator_d_conv(this->grads["Conv1_5x5"].get(), images,
                       this->outputs["Conv1_5x5_col"].get(),
-                      this->weights["Conv1_5x5_weights"].get(), 0, 0, 1, 1,
-                      this->grads["Conv1_5x5_weights"].get()));
+                      this->weights["Conv1_5x5_filters"].get(), 0, 0, 1, 1,
+                      this->grads["Conv1_5x5_filters"].get()));
 }
 
 int Minist::correct_count(const std::vector<float>& predict_probs,

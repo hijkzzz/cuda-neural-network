@@ -30,7 +30,7 @@ class Minist {
   // Conv2_5x5     16 * 32
   // MaxPool2_2x2
   // Conv3_3x3     32 * 64
-  // FC1           (64 *  3 * 3) * 128
+  // FC1           (64 *  2 * 2) * 128
   // FC2           128 * 10
   // SoftMax
 
