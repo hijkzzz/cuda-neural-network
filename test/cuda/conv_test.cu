@@ -35,6 +35,7 @@ TEST(ConvTest, im2col) {
 
   im2col(im_ptr, channel_in, height, width, kernel_h, kernel_w, pad_h, pad_w,
          stride_h, stride_w, col_ptr);
+  std::cout << "im2col" << std::endl;
   device_vector_cout(col.data);
 }
 
@@ -88,6 +89,7 @@ TEST(ConvTest, col2im) {
 
   col2im(col_ptr, channel_in, height, width, kernel_h, kernel_w, pad_h, pad_w,
          stride_h, stride_w, im_ptr);
+  std::cout << "col2im" << std::endl;
   device_vector_cout(im.data);
 }
 
@@ -127,6 +129,7 @@ TEST(ConvTest, ConvForward) {
       operator_conv(&input, &filter, &cols, pad_h, pad_w, stride_h, stride_h));
   ASSERT_TRUE(device_vector_equals_vector(
       output->shape, {batch_size, channel_out, height, width}));
+  std::cout << "conv" << std::endl;
   device_vector_cout(output->data);
   // test with scipy.signal.convolve2d(input, np.rot90(np.rot90(filter)),
   // "same")
@@ -134,6 +137,7 @@ TEST(ConvTest, ConvForward) {
   ASSERT_TRUE(device_vector_equals_vector(
       cols.shape,
       {batch_size, channel_in * kernel_h * kernel_w, height * width}));
+  std::cout << "im2col" << std::endl;
   device_vector_cout(cols.data);
 }
 
@@ -177,12 +181,16 @@ TEST(ConvTest, ConvBackward) {
 
   // im2col
   Storage cols(
-      {batch_size, channel_in * kernel_h * kernel_w, height_col, width_col});
+      {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col});
   const float *im_ptr = thrust::raw_pointer_cast(input.data.data());
   float *col_ptr = thrust::raw_pointer_cast(cols.data.data());
 
   im2col(im_ptr, channel_in, height, width, kernel_h, kernel_w, pad_h, pad_w,
          stride_h, stride_w, col_ptr);
+  im2col(im_ptr + channel_in * height * width, channel_in, height, width,
+         kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w,
+         col_ptr + channel_in * kernel_h * kernel_w * height_col * width_col);
+  std::cout << "im2col" << std::endl;
   device_vector_cout(cols.data);
 
   // backward
@@ -193,6 +201,7 @@ TEST(ConvTest, ConvBackward) {
 
   ASSERT_TRUE(device_vector_equals_vector(
       input_grad->shape, {batch_size, channel_in, height, width}));
+  std::cout << "conv_d input" << std::endl;
   device_vector_cout(input_grad->data);
   // Y = conv_2d(X, W)
   // dL/dX = conv_2d(dL/dY, rot180(W), "full")
@@ -201,6 +210,7 @@ TEST(ConvTest, ConvBackward) {
   ASSERT_TRUE(device_vector_equals_vector(
       filters_grad.shape,
       {batch_size, channel_out, channel_in, kernel_h, kernel_w}));
+  std::cout << "conv_d weight" << std::endl;
   device_vector_cout(filters_grad.data);
   // dL/dW = conv_2d(X, dL/dY, "valid")
   // test with scipy.signal.convolve2d(input, np.rot90(np.rot90(output_grad),

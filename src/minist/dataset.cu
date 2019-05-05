@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+
 using namespace std;
 
 int ReverseInt(int i) {
@@ -67,23 +68,4 @@ void read_Mnist_Images(string filename, vector<vector<double>>& images) {
       images.push_back(tp);
     }
   }
-}
-
-int main() {
-  /*
-  vector<double>labels;
-  read_Mnist_Label("t10k-labels.idx1-ubyte", labels);
-  for (auto iter = labels.begin(); iter != labels.end(); iter++)
-  {
-      cout << *iter << " ";
-  }
-  */
-  vector<vector<double>> images;
-  read_Mnist_Images("t10k-images.idx3-ubyte", images);
-  for (int i = 0; i < images.size(); i++) {
-    for (int j = 0; j < images[0].size(); j++) {
-      cout << images[i][j] << " ";
-    }
-  }
-  return 0;
 }
