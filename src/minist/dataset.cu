@@ -13,7 +13,6 @@ DataSet::DataSet(std::string minist_data_path, bool shuffle) {
 
   // TODO: shuffle train data
   if (shuffle) {
-    
   }
 
   // test data
@@ -32,9 +31,6 @@ DataSet::get_train_data(int batch_size) {
 
   std::vector<std::vector<float>> temp_data(this->train_data.begin() + start,
                                             this->train_data.begin() + end);
-  // preprocess
-  for_each(temp_data.begin(), temp_data.end(),
-           [](float& x) { x = x / 255 - 0.5; });
   std::vector<unsigned char> temp_label(this->train_label.begin() + start,
                                         this->train_label.begin() + end);
 
@@ -50,9 +46,6 @@ DataSet::get_test_data(int batch_size) {
 
   std::vector<std::vector<float>> temp_data(this->test_data.begin() + start,
                                             this->test_data.begin() + end);
-  // preprocess
-  for_each(temp_data.begin(), temp_data.end(),
-           [](float& x) { x = x / 255 - 0.5; });
   std::vector<unsigned char> temp_label(this->test_label.begin() + start,
                                         this->test_label.begin() + end);
 
@@ -71,7 +64,7 @@ unsigned int DataSet::reverse_int(unsigned int i) {
 }
 
 void DataSet::read_images(std::string file_name,
-                          std::vector<std::vector<unsigned char>>& output) {
+                          std::vector<std::vector<float>>& output) {
   std::ifstream file(file_name, std::ios::binary);
   if (file.is_open()) {
     unsigned int magic_number = 0;
@@ -95,7 +88,12 @@ void DataSet::read_images(std::string file_name,
     for (int i = 0; i < number_of_images; i++) {
       std::vector<unsigned char> image(n_rows * n_cols);
       file.read((char*)&image[0], sizeof(unsigned char) * n_rows * n_cols);
-      output.push_back(image);
+
+      std::vector<float> normalized_image(n_rows * n_cols);
+      for (int i = 0; i < n_rows * n_cols; i++) {
+        normalized_image[i] = (float)image[i] / 255 - 0.5;
+      }
+      output.emplace_back(std::move(normalized_image));
     }
   }
 }

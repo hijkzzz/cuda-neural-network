@@ -18,14 +18,14 @@ class DataSet {
  private:
   unsigned int reverse_int(unsigned int i);  // big endian
   void read_images(std::string file_name,
-                   std::vector<std::vector<unsigned char>>& output);
+                   std::vector<std::vector<float>>& output);
   void read_labels(std::string file_name, std::vector<unsigned char>& output);
 
-  std::vector<std::vector<unsigned char>> train_data;
+  std::vector<std::vector<float>> train_data;
   std::vector<unsigned char> train_label;
   int train_data_index;
 
-  std::vector<std::vector<unsigned char>> test_data;
+  std::vector<std::vector<float>> test_data;
   std::vector<unsigned char> test_label;
   int test_data_index;
 };
