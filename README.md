@@ -1,4 +1,4 @@
-# neural-network
+﻿# neural-network
 Convolutional Neural Network with CUDA
 
 ## Layers
@@ -26,6 +26,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build
 
 # Download the minist dataset from http://yann.lecun.com/exdb/mnist/
+# Unzip and put to ./minist_data
 ./minist
 ```
 

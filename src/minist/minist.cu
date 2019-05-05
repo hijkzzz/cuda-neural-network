@@ -114,9 +114,9 @@ void Minist::init_weights() {
   this->weights["Conv1_5x5_bias"]->xavier(1 * 28 * 28, 16 * 24 * 24);
 
   this->square_grads["Conv1_5x5_filters"] =
-      std::shared_ptr<Storage>(new Storage({16, 1, 5, 5}, 1));
+      std::shared_ptr<Storage>(new Storage({16, 1, 5, 5}, 0.1));
   this->square_grads["Conv1_5x5_bias"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 16}, 1));
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 16}, 0.1));
 
   // Conv2_5x5     16 * 32
   this->weights["Conv2_5x5_filters"] =
@@ -127,9 +127,9 @@ void Minist::init_weights() {
   this->weights["Conv2_5x5_bias"]->xavier(16 * 12 * 12, 32 * 8 * 8);
 
   this->square_grads["Conv2_5x5_filters"] =
-      std::shared_ptr<Storage>(new Storage({32, 16, 5, 5}, 1));
+      std::shared_ptr<Storage>(new Storage({32, 16, 5, 5}, 0.1));
   this->square_grads["Conv2_5x5_bias"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 32}, 1));
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 32}, 0.1));
 
   // Conv3_3x3     32 * 64
   this->weights["Conv3_3x3_filters"] =
@@ -140,9 +140,9 @@ void Minist::init_weights() {
   this->weights["Conv3_3x3_bias"]->xavier(32 * 4 * 4, 64 * 2 * 2);
 
   this->square_grads["Conv3_3x3_filters"] =
-      std::shared_ptr<Storage>(new Storage({64, 32, 3, 3}, 1));
+      std::shared_ptr<Storage>(new Storage({64, 32, 3, 3}, 0.1));
   this->square_grads["Conv3_3x3_bias"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 64}, 1));
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 64}, 0.1));
 
   // FC1           (64 *  3 * 3) * 128
   this->weights["FC1_weights"] =
@@ -153,9 +153,9 @@ void Minist::init_weights() {
   this->weights["FC1_bias"]->xavier(64 * 2 * 2, 128);
 
   this->square_grads["FC1_weights"] = std::shared_ptr<Storage>(
-      new Storage(std::vector<int>{64 * 2 * 2, 128}, 1));
+      new Storage(std::vector<int>{64 * 2 * 2, 128}, 0.1));
   this->square_grads["FC1_bias"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 128}, 1));
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 128}, 0.1));
 
   // FC2           128 * 10
   this->weights["FC2_weights"] =
@@ -166,9 +166,9 @@ void Minist::init_weights() {
   this->weights["FC2_bias"]->xavier(128, 10);
 
   this->square_grads["FC2_weights"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{128, 10}, 1));
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{128, 10}, 0.1));
   this->square_grads["FC2_bias"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 10}, 1));
+      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 10}, 0.1));
 }
 
 void Minist::update_weights(float learing_rate, float l2, float beta) {
