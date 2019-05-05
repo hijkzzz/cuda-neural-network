@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <iostream>
 #include <memory>
@@ -34,7 +34,7 @@ class Minist {
   // FC2           128 * 10
   // SoftMax
 
-  void init_weights();
+  void init_weights(float rms_default);
   void update_weights(float learing_rate, float l2, float beta);
 
   void network_forward(const Storage* images, const Storage* labels);

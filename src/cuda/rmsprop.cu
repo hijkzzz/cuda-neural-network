@@ -41,8 +41,10 @@ void rmsprop_update(Storage *square_grads, Storage *weights,
                     float beta) {
   // need reduce
   const Storage *reduce_grads = grads;
+  bool reduce = false;
   if (grads->data.size() > weights->data.size()) {
     reduce_grads = operator_sum(grads, 0);
+    reduce = true;
   }
 
   CHECK_EQ(square_grads->data.size(), reduce_grads->data.size(),
@@ -76,7 +78,7 @@ void rmsprop_update(Storage *square_grads, Storage *weights,
   weights->data = std::move(new_weights);
 
   // clean
-  if (grads->data.size() > weights->data.size()) {
+  if (reduce) {
     delete reduce_grads;
   }
 }

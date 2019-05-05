@@ -1,55 +1,61 @@
 ﻿#include <minist.cuh>
 
-Minist::Minist(DataSet* dataset) : dataset(dataset) { this->init_weights(); }
+Minist::Minist(DataSet* dataset) : dataset(dataset) { this->init_weights(1); }
 
 void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
                    float beta) {
-  // get data
-  int idx = 0;
-
-  auto train_data = this->dataset->get_train_data(batch_size);
-  std::vector<std::vector<float>>* images = &train_data.first;
-  std::vector<unsigned char>* labels = &train_data.second;
-
-  while (images->size() > 0) {
-    // prepare ont-hot data
-    int size = images->size();
-
-    std::unique_ptr<Storage> images_tensor(
-        new Storage({size, 1, dataset->get_height(), dataset->get_width()}, 0));
-    std::unique_ptr<Storage> labels_tensor(
-        new Storage(std::vector<int>{size, 10}, 0));
-
-    int image_stride = 1 * dataset->get_height() * dataset->get_width();
-    int label_stride = 10;
-    for (int i = 0; i < size; i++) {
-      thrust::copy((*images)[i].begin(), (*images)[i].end(),
-                   images_tensor->data.begin() + i * image_stride);
-      int index = i * label_stride + (*labels)[i];
-      labels_tensor->data[index] = 1;
-    }
-
-    // forward
-    this->network_forward(images_tensor.get(), labels_tensor.get());
-
-    // print nll loss and accuracy
-    std::vector<float> predict_probs = this->outputs["LogSoftMax"]->get_data();
-    int corr_count = this->correct_count(predict_probs, label_stride, *labels);
-    float accuracy = (float)corr_count / size;
-    float nll_loss = this->outputs["NLLLoss"]->get_data()[0];
-
-    std::cout << "Batch: " << idx << ", NLLLoss: " << nll_loss
-              << ", Train Accuracy: " << accuracy << std::endl;
-
-    // backward & update
-    this->network_backward(images_tensor.get(), labels_tensor.get());
-    this->update_weights(learing_rate, l2, beta);
+  for (int epoch = 0; epoch < epochs; epoch++) {
+    int idx = 0;
 
     // get data
-    train_data = this->dataset->get_train_data(batch_size);
-    images = &train_data.first;
-    labels = &train_data.second;
-    idx++;
+    this->dataset->reset();
+    auto train_data = this->dataset->get_train_data(batch_size);
+    std::vector<std::vector<float>>* images = &train_data.first;
+    std::vector<unsigned char>* labels = &train_data.second;
+
+    while (images->size() > 0) {
+      // prepare ont-hot data
+      int size = images->size();
+
+      std::unique_ptr<Storage> images_tensor(new Storage(
+          {size, 1, dataset->get_height(), dataset->get_width()}, 0));
+      std::unique_ptr<Storage> labels_tensor(
+          new Storage(std::vector<int>{size, 10}, 0));
+
+      int image_stride = 1 * dataset->get_height() * dataset->get_width();
+      int label_stride = 10;
+      for (int i = 0; i < size; i++) {
+        thrust::copy((*images)[i].begin(), (*images)[i].end(),
+                     images_tensor->data.begin() + i * image_stride);
+        int index = i * label_stride + (*labels)[i];
+        labels_tensor->data[index] = 1;
+      }
+
+      // forward
+      this->network_forward(images_tensor.get(), labels_tensor.get());
+
+      // print nll loss and accuracy
+      std::vector<float> predict_probs =
+          this->outputs["LogSoftMax"]->get_data();
+      int corr_count =
+          this->correct_count(predict_probs, label_stride, *labels);
+      float accuracy = (float)corr_count / size;
+      float nll_loss = this->outputs["NLLLoss"]->get_data()[0];
+
+      std::cout << "Epoch: " << epoch << ", Batch: " << idx
+                << ", NLLLoss: " << nll_loss << ", Train Accuracy: " << accuracy
+                << std::endl;
+
+      // backward & update
+      this->network_backward(images_tensor.get(), labels_tensor.get());
+      this->update_weights(learing_rate, l2, beta);
+
+      // get data
+      train_data = this->dataset->get_train_data(batch_size);
+      images = &train_data.first;
+      labels = &train_data.second;
+      idx++;
+    }
   }
 }
 
@@ -104,7 +110,7 @@ void Minist::test(int batch_size) {
   std::cout << "Total Accuracy: " << ((float)corr_count / total) << std::endl;
 }
 
-void Minist::init_weights() {
+void Minist::init_weights(float rms_default) {
   // Conv1_5x5     1 * 16
   this->weights["Conv1_5x5_filters"] =
       std::shared_ptr<Storage>(new Storage({16, 1, 5, 5}));
@@ -114,9 +120,9 @@ void Minist::init_weights() {
   this->weights["Conv1_5x5_bias"]->xavier(1 * 28 * 28, 16 * 24 * 24);
 
   this->square_grads["Conv1_5x5_filters"] =
-      std::shared_ptr<Storage>(new Storage({16, 1, 5, 5}, 0.1));
-  this->square_grads["Conv1_5x5_bias"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 16}, 0.1));
+      std::shared_ptr<Storage>(new Storage({16, 1, 5, 5}, rms_default));
+  this->square_grads["Conv1_5x5_bias"] = std::shared_ptr<Storage>(
+      new Storage(std::vector<int>{1, 16}, rms_default));
 
   // Conv2_5x5     16 * 32
   this->weights["Conv2_5x5_filters"] =
@@ -127,9 +133,9 @@ void Minist::init_weights() {
   this->weights["Conv2_5x5_bias"]->xavier(16 * 12 * 12, 32 * 8 * 8);
 
   this->square_grads["Conv2_5x5_filters"] =
-      std::shared_ptr<Storage>(new Storage({32, 16, 5, 5}, 0.1));
-  this->square_grads["Conv2_5x5_bias"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 32}, 0.1));
+      std::shared_ptr<Storage>(new Storage({32, 16, 5, 5}, rms_default));
+  this->square_grads["Conv2_5x5_bias"] = std::shared_ptr<Storage>(
+      new Storage(std::vector<int>{1, 32}, rms_default));
 
   // Conv3_3x3     32 * 64
   this->weights["Conv3_3x3_filters"] =
@@ -140,9 +146,9 @@ void Minist::init_weights() {
   this->weights["Conv3_3x3_bias"]->xavier(32 * 4 * 4, 64 * 2 * 2);
 
   this->square_grads["Conv3_3x3_filters"] =
-      std::shared_ptr<Storage>(new Storage({64, 32, 3, 3}, 0.1));
-  this->square_grads["Conv3_3x3_bias"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 64}, 0.1));
+      std::shared_ptr<Storage>(new Storage({64, 32, 3, 3}, rms_default));
+  this->square_grads["Conv3_3x3_bias"] = std::shared_ptr<Storage>(
+      new Storage(std::vector<int>{1, 64}, rms_default));
 
   // FC1           (64 *  3 * 3) * 128
   this->weights["FC1_weights"] =
@@ -153,9 +159,9 @@ void Minist::init_weights() {
   this->weights["FC1_bias"]->xavier(64 * 2 * 2, 128);
 
   this->square_grads["FC1_weights"] = std::shared_ptr<Storage>(
-      new Storage(std::vector<int>{64 * 2 * 2, 128}, 0.1));
-  this->square_grads["FC1_bias"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 128}, 0.1));
+      new Storage(std::vector<int>{64 * 2 * 2, 128}, rms_default));
+  this->square_grads["FC1_bias"] = std::shared_ptr<Storage>(
+      new Storage(std::vector<int>{1, 128}, rms_default));
 
   // FC2           128 * 10
   this->weights["FC2_weights"] =
@@ -165,10 +171,10 @@ void Minist::init_weights() {
   this->weights["FC2_weights"]->xavier(128, 10);
   this->weights["FC2_bias"]->xavier(128, 10);
 
-  this->square_grads["FC2_weights"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{128, 10}, 0.1));
-  this->square_grads["FC2_bias"] =
-      std::shared_ptr<Storage>(new Storage(std::vector<int>{1, 10}, 0.1));
+  this->square_grads["FC2_weights"] = std::shared_ptr<Storage>(
+      new Storage(std::vector<int>{128, 10}, rms_default));
+  this->square_grads["FC2_bias"] = std::shared_ptr<Storage>(
+      new Storage(std::vector<int>{1, 10}, rms_default));
 }
 
 void Minist::update_weights(float learing_rate, float l2, float beta) {
@@ -282,8 +288,8 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
       this->grads["LogSoftMax"].get(), this->outputs["FC2_bias"].get()));
 
   this->grads["FC2_bias"] = std::shared_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["FC2"] = std::shared_ptr<Storage>(operator_d_bias(
-      this->grads["FC2"].get(), this->grads["FC2_bias"].get()));
+  this->grads["FC2"] = std::shared_ptr<Storage>(
+      operator_d_bias(this->grads["FC2"].get(), this->grads["FC2_bias"].get()));
 
   this->grads["FC2_weights"] = std::shared_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["FC2"] = std::shared_ptr<Storage>(operator_d_linear(
@@ -295,8 +301,8 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
       this->grads["FC2"].get(), this->outputs["FC1_bias"].get()));
 
   this->grads["FC1_bias"] = std::shared_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["FC1"] = std::shared_ptr<Storage>(operator_d_bias(
-      this->grads["FC1"].get(), this->grads["FC1_bias"].get()));
+  this->grads["FC1"] = std::shared_ptr<Storage>(
+      operator_d_bias(this->grads["FC1"].get(), this->grads["FC1_bias"].get()));
 
   this->grads["FC1_weights"] = std::shared_ptr<Storage>(new Storage({1, 1, 1}));
   this->grads["FC1"] = std::shared_ptr<Storage>(operator_d_linear(

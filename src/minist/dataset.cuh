@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <iostream>
 #include <memory>
@@ -14,6 +14,11 @@ class DataSet {
   get_train_data(int batch_size);
   std::pair<std::vector<std::vector<float>>, std::vector<unsigned char>>
   get_test_data(int batch_size);
+
+  void reset() {
+    this->train_data_index = 0;
+    this->test_data_index = 0;
+  }
 
   int get_height() { return this->height; }
   int get_width() { return this->width; }
