@@ -1,4 +1,4 @@
-#include <sigmoid.cuh>
+﻿#include <sigmoid.cuh>
 
 struct sigmoid_functor {
   __host__ __device__ float operator()(const float &x) const {
@@ -26,10 +26,10 @@ struct sigmoid_d_functor {
 // dL/dX = sigmoid'(X) element_mul dL/dY
 Storage *operator_d_sigmoid(const Storage *outputs_grad,
                             const Storage *input1) {
-  Storage *d_sigmoid = new Storage(input1->shape);
+  std::unique_ptr<Storage> d_sigmoid(new Storage(input1->shape));
   sigmoid_d_functor f;
   thrust::transform(input1->data.begin(), input1->data.end(),
                     d_sigmoid->data.begin(), f);
 
-  return operator_mul(d_sigmoid, outputs_grad);
+  return operator_mul(d_sigmoid.get(), outputs_grad);
 }

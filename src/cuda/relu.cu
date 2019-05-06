@@ -1,4 +1,4 @@
-#include <relu.cuh>
+﻿#include <relu.cuh>
 
 struct relu_functor {
   __host__ __device__ float operator()(const float &x) const {
@@ -24,10 +24,10 @@ struct relu_d_functor {
 // Y = relu(X)
 // dL/dX = relu'(X) element_mul dL/dY
 Storage *operator_d_relu(const Storage *outputs_grad, const Storage *input1) {
-  Storage *d_relu = new Storage(input1->shape);
+  std::unique_ptr<Storage> d_relu(new Storage(input1->shape));
   relu_d_functor f;
   thrust::transform(input1->data.begin(), input1->data.end(),
                     d_relu->data.begin(), f);
 
-  return operator_mul(d_relu, outputs_grad);
+  return operator_mul(d_relu.get(), outputs_grad);
 }

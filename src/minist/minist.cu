@@ -1,6 +1,8 @@
 ﻿#include <minist.cuh>
 
-Minist::Minist(DataSet* dataset) : dataset(dataset) { this->init_weights(0.01); }
+Minist::Minist(DataSet* dataset) : dataset(dataset) {
+  this->init_weights(0.01);
+}
 
 void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
                    float beta) {
@@ -9,7 +11,7 @@ void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
 
     // get data
     this->dataset->reset();
-    auto train_data = this->dataset->get_train_data(batch_size);
+    auto train_data = std::move(this->dataset->get_train_data(batch_size));
     std::vector<std::vector<float>>* images = &train_data.first;
     std::vector<unsigned char>* labels = &train_data.second;
 
@@ -32,30 +34,31 @@ void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
       }
 
       // forward
-      this->network_forward(images_tensor.get(), labels_tensor.get());
+       this->network_forward(images_tensor.get(), labels_tensor.get());
 
       // print nll loss and accuracy
-      std::vector<float> predict_probs =
+       std::vector<float> predict_probs =
           this->outputs["LogSoftMax"]->get_data();
-      int corr_count =
+       int corr_count =
           this->correct_count(predict_probs, label_stride, *labels);
-      float accuracy = (float)corr_count / size;
-      float nll_loss = this->outputs["NLLLoss"]->get_data()[0];
+       float accuracy = (float)corr_count / size;
+       float nll_loss = this->outputs["NLLLoss"]->get_data()[0];
 
-      std::cout << "Epoch: " << epoch << ", Batch: " << idx
-                << ", NLLLoss: " << nll_loss << ", Train Accuracy: " << accuracy
+       std::cout << "Epoch: " << epoch << ", Batch: " << idx
+                << ", NLLLoss: " << nll_loss << ", Train Accuracy: " <<
+                accuracy
                 << std::endl;
 
       // backward & update
-      this->network_backward(images_tensor.get(), labels_tensor.get());
-      this->update_weights(learing_rate, l2, beta);
+       this->network_backward(images_tensor.get(), labels_tensor.get());
+      // this->update_weights(learing_rate, l2, beta);
 
-      // clear outputs/grads
-      stl_clear_object(&this->outputs);
-      stl_clear_object(&this->grads);
+      //// clear outputs/grads
+      // stl_clear_object(&this->outputs);
+      // stl_clear_object(&this->grads);
 
       // get data
-      train_data = this->dataset->get_train_data(batch_size);
+      train_data = std::move(this->dataset->get_train_data(batch_size));
       images = &train_data.first;
       labels = &train_data.second;
       idx++;
@@ -326,69 +329,69 @@ void Minist::network_backward(const Storage* images, const Storage* labels) {
   this->grads["Conv3_3x3_bias_relu"] = std::unique_ptr<Storage>(operator_d_relu(
       this->grads["FC1"].get(), this->outputs["Conv3_3x3_bias"].get()));
 
-  this->grads["Conv3_3x3_bias"] =
-      std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["Conv3_3x3_bias_"] = std::unique_ptr<Storage>(
-      operator_d_conv_bias(this->grads["Conv3_3x3_bias_relu"].get(),
-                           this->grads["Conv3_3x3_bias"].get()));
+  //this->grads["Conv3_3x3_bias"] =
+  //    std::unique_ptr<Storage>(new Storage({1, 1, 1}));
+  //this->grads["Conv3_3x3_bias_"] = std::unique_ptr<Storage>(
+  //    operator_d_conv_bias(this->grads["Conv3_3x3_bias_relu"].get(),
+  //                         this->grads["Conv3_3x3_bias"].get()));
 
-  this->grads["Conv3_3x3_filters"] =
-      std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["Conv3_3x3"] = std::unique_ptr<Storage>(operator_d_conv(
-      this->grads["Conv3_3x3_bias_"].get(), this->outputs["MaxPool2_2x2"].get(),
-      this->outputs["Conv3_3x3_col"].get(),
-      this->weights["Conv3_3x3_filters"].get(), 0, 0, 1, 1,
-      this->grads["Conv3_3x3_filters"].get()));
+  //this->grads["Conv3_3x3_filters"] =
+  //    std::unique_ptr<Storage>(new Storage({1, 1, 1}));
+  //this->grads["Conv3_3x3"] = std::unique_ptr<Storage>(operator_d_conv(
+  //    this->grads["Conv3_3x3_bias_"].get(), this->outputs["MaxPool2_2x2"].get(),
+  //    this->outputs["Conv3_3x3_col"].get(),
+  //    this->weights["Conv3_3x3_filters"].get(), 0, 0, 1, 1,
+  //    this->grads["Conv3_3x3_filters"].get()));
 
-  // MaxPool2_2x2
-  this->grads["MaxPool2_2x2"] = std::unique_ptr<Storage>(operator_d_max_pool(
-      this->grads["Conv3_3x3"].get(),
-      this->outputs["Conv2_5x5_bias_relu"].get(),
-      this->outputs["MaxPool2_2x2_mask"].get(), 2, 2, 0, 0, 2, 2));
+  //// MaxPool2_2x2
+  //this->grads["MaxPool2_2x2"] = std::unique_ptr<Storage>(operator_d_max_pool(
+  //    this->grads["Conv3_3x3"].get(),
+  //    this->outputs["Conv2_5x5_bias_relu"].get(),
+  //    this->outputs["MaxPool2_2x2_mask"].get(), 2, 2, 0, 0, 2, 2));
 
-  // Conv2_5x5     16 * 32
-  this->grads["Conv2_5x5_bias_relu"] = std::unique_ptr<Storage>(
-      operator_d_relu(this->grads["MaxPool2_2x2"].get(),
-                      this->outputs["Conv2_5x5_bias"].get()));
+  //// Conv2_5x5     16 * 32
+  //this->grads["Conv2_5x5_bias_relu"] = std::unique_ptr<Storage>(
+  //    operator_d_relu(this->grads["MaxPool2_2x2"].get(),
+  //                    this->outputs["Conv2_5x5_bias"].get()));
 
-  this->grads["Conv2_5x5_bias"] =
-      std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["Conv2_5x5_bias_"] = std::unique_ptr<Storage>(
-      operator_d_conv_bias(this->grads["Conv2_5x5_bias_relu"].get(),
-                           this->grads["Conv2_5x5_bias"].get()));
+  //this->grads["Conv2_5x5_bias"] =
+  //    std::unique_ptr<Storage>(new Storage({1, 1, 1}));
+  //this->grads["Conv2_5x5_bias_"] = std::unique_ptr<Storage>(
+  //    operator_d_conv_bias(this->grads["Conv2_5x5_bias_relu"].get(),
+  //                         this->grads["Conv2_5x5_bias"].get()));
 
-  this->grads["Conv2_5x5_filters"] =
-      std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["Conv2_5x5"] = std::unique_ptr<Storage>(operator_d_conv(
-      this->grads["Conv2_5x5_bias_"].get(), this->outputs["MaxPool1_2x2"].get(),
-      this->outputs["Conv2_5x5_col"].get(),
-      this->weights["Conv2_5x5_filters"].get(), 0, 0, 1, 1,
-      this->grads["Conv2_5x5_filters"].get()));
+  //this->grads["Conv2_5x5_filters"] =
+  //    std::unique_ptr<Storage>(new Storage({1, 1, 1}));
+  //this->grads["Conv2_5x5"] = std::unique_ptr<Storage>(operator_d_conv(
+  //    this->grads["Conv2_5x5_bias_"].get(), this->outputs["MaxPool1_2x2"].get(),
+  //    this->outputs["Conv2_5x5_col"].get(),
+  //    this->weights["Conv2_5x5_filters"].get(), 0, 0, 1, 1,
+  //    this->grads["Conv2_5x5_filters"].get()));
 
-  // MaxPool1_2x2
-  this->grads["MaxPool1_2x2"] = std::unique_ptr<Storage>(operator_d_max_pool(
-      this->grads["Conv2_5x5"].get(),
-      this->outputs["Conv1_5x5_bias_relu"].get(),
-      this->outputs["MaxPool1_2x2_mask"].get(), 2, 2, 0, 0, 2, 2));
+  //// MaxPool1_2x2
+  //this->grads["MaxPool1_2x2"] = std::unique_ptr<Storage>(operator_d_max_pool(
+  //    this->grads["Conv2_5x5"].get(),
+  //    this->outputs["Conv1_5x5_bias_relu"].get(),
+  //    this->outputs["MaxPool1_2x2_mask"].get(), 2, 2, 0, 0, 2, 2));
 
-  // Conv1_5x5     1 * 16
-  this->grads["Conv1_5x5_bias_relu"] = std::unique_ptr<Storage>(
-      operator_d_relu(this->grads["MaxPool1_2x2"].get(),
-                      this->outputs["Conv1_5x5_bias"].get()));
+  //// Conv1_5x5     1 * 16
+  //this->grads["Conv1_5x5_bias_relu"] = std::unique_ptr<Storage>(
+  //    operator_d_relu(this->grads["MaxPool1_2x2"].get(),
+  //                    this->outputs["Conv1_5x5_bias"].get()));
 
-  this->grads["Conv1_5x5_bias"] =
-      std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["Conv1_5x5_bias_"] = std::unique_ptr<Storage>(
-      operator_d_conv_bias(this->grads["Conv1_5x5_bias_relu"].get(),
-                           this->grads["Conv1_5x5_bias"].get()));
+  //this->grads["Conv1_5x5_bias"] =
+  //    std::unique_ptr<Storage>(new Storage({1, 1, 1}));
+  //this->grads["Conv1_5x5_bias_"] = std::unique_ptr<Storage>(
+  //    operator_d_conv_bias(this->grads["Conv1_5x5_bias_relu"].get(),
+  //                         this->grads["Conv1_5x5_bias"].get()));
 
-  this->grads["Conv1_5x5_filters"] =
-      std::unique_ptr<Storage>(new Storage({1, 1, 1}));
-  this->grads["Conv1_5x5"] = std::unique_ptr<Storage>(
-      operator_d_conv(this->grads["Conv1_5x5_bias_"].get(), images,
-                      this->outputs["Conv1_5x5_col"].get(),
-                      this->weights["Conv1_5x5_filters"].get(), 0, 0, 1, 1,
-                      this->grads["Conv1_5x5_filters"].get()));
+  //this->grads["Conv1_5x5_filters"] =
+  //    std::unique_ptr<Storage>(new Storage({1, 1, 1}));
+  //this->grads["Conv1_5x5"] = std::unique_ptr<Storage>(
+  //    operator_d_conv(this->grads["Conv1_5x5_bias_"].get(), images,
+  //                    this->outputs["Conv1_5x5_col"].get(),
+  //                    this->weights["Conv1_5x5_filters"].get(), 0, 0, 1, 1,
+  //                    this->grads["Conv1_5x5_filters"].get()));
 }
 
 int Minist::correct_count(const std::vector<float>& predict_probs,

@@ -32,7 +32,7 @@ struct l2_grads_functor {
   l2_grads_functor(float _l2) : l2(_l2) {}
 
   __host__ __device__ float operator()(const float &x, const float &y) const {
-    return x + l2 * 2 * y;
+    return x + l2 * y;
   }
 };
 
