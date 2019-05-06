@@ -30,6 +30,14 @@ cmake --build
 ./minist
 ```
 
+## Performance
+* 1 epoch 95%
+* 10 epochs 98%
+
+## TODO
+* Allocate GPU memory at once
+* Use CUDA Streams
+
 ## References
 * [High Performance Convolutional Neural Networks for Document Processing](https://hal.inria.fr/file/index/docid/112631/filename/p1038112283956.pdf)
 * [卷积神经网络(CNN)反向传播算法](https://www.cnblogs.com/pinard/p/6494810.html)
