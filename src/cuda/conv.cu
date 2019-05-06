@@ -197,7 +197,7 @@ Storage *operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad) {
   // N*C*H*W ==> N*C
   std::unique_ptr<Storage> sum3(operator_sum(outputs_grad, 3));
   std::unique_ptr<Storage> sum2(operator_sum(sum3.get(), 2));
-  *bias_grad = *sum2;
+  *bias_grad = std::move(*sum2);
 
   return new Storage(*outputs_grad);
 }

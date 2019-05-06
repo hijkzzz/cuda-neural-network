@@ -19,6 +19,10 @@ class Storage {
   explicit Storage(const thrust::device_vector<int> &_shape,
                    thrust::device_vector<float> &&_data);
 
+  Storage(const Storage& other);
+  Storage& operator=(const Storage& other);
+  ~Storage();
+
   void xavier(size_t in_size, size_t out_size);
   void reshape(std::vector<int> shape);
 

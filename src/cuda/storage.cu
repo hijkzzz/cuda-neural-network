@@ -57,6 +57,31 @@ Storage::Storage(const thrust::device_vector<int> &_shape,
   this->check_size();
 }
 
+Storage::Storage(const Storage &other) {
+  this->data.resize(other.data.size());
+  thrust::copy(other.data.begin(), other.data.end(), this->data.begin());
+
+  this->shape.resize(other.shape.size());
+  thrust::copy(other.shape.begin(), other.shape.end(), this->shape.begin());
+}
+
+Storage &Storage::operator=(const Storage &other) {
+  if (this != &other) {
+    this->data.resize(other.data.size());
+    thrust::copy(other.data.begin(), other.data.end(), this->data.begin());
+
+    this->shape.resize(other.shape.size());
+    thrust::copy(other.shape.begin(), other.shape.end(), this->shape.begin());
+  }
+
+  return *this;
+}
+
+Storage::~Storage() {
+  this->data.reserve(0);
+  this->shape.reserve(0);
+}
+
 void Storage::check_size() {
   CHECK_EQ(true, this->shape.size() >= 2, "Storage: error, shape.size() < 2");
   int size = thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
