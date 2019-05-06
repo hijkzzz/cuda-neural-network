@@ -150,7 +150,7 @@ Storage *operator_d_conv(const Storage *outputs_grad, const Storage *inputs,
                     cols->data.begin() + i * batch_col_stride,
                     cols->data.begin() + (i + 1) * batch_col_stride));
     std::unique_ptr<Storage> col_t(operator_transpose(col.get(), 0, 1));
-    col.release();
+    col.reset();
     std::unique_ptr<Storage> dl_df(operator_matmul(dl_dy.get(), col_t.get()));
     assert(dl_df->data.size() == batch_filters_grad_stride);
     thrust::copy(dl_df->data.begin(), dl_df->data.end(),

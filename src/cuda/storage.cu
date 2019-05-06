@@ -93,8 +93,8 @@ Storage &Storage::operator=(Storage &&other) {
 }
 
 Storage::~Storage() {
-  stl_clear_object(&this->data);
-  stl_clear_object(&this->shape);
+  //stl_clear_object(&this->data);
+  //stl_clear_object(&this->shape);
 }
 
 void Storage::check_size() {

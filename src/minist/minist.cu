@@ -34,28 +34,27 @@ void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
       }
 
       // forward
-       this->network_forward(images_tensor.get(), labels_tensor.get());
+      this->network_forward(images_tensor.get(), labels_tensor.get());
 
       // print nll loss and accuracy
-       std::vector<float> predict_probs =
+      std::vector<float> predict_probs =
           this->outputs["LogSoftMax"]->get_data();
-       int corr_count =
+      int corr_count =
           this->correct_count(predict_probs, label_stride, *labels);
-       float accuracy = (float)corr_count / size;
-       float nll_loss = this->outputs["NLLLoss"]->get_data()[0];
+      float accuracy = (float)corr_count / size;
+      float nll_loss = this->outputs["NLLLoss"]->get_data()[0];
 
-       std::cout << "Epoch: " << epoch << ", Batch: " << idx
-                << ", NLLLoss: " << nll_loss << ", Train Accuracy: " <<
-                accuracy
+      std::cout << "Epoch: " << epoch << ", Batch: " << idx
+                << ", NLLLoss: " << nll_loss << ", Train Accuracy: " << accuracy
                 << std::endl;
 
       // backward & update
-       this->network_backward(images_tensor.get(), labels_tensor.get());
-      // this->update_weights(learing_rate, l2, beta);
+      this->network_backward(images_tensor.get(), labels_tensor.get());
+      this->update_weights(learing_rate, l2, beta);
 
       //// clear outputs/grads
-      // stl_clear_object(&this->outputs);
-      // stl_clear_object(&this->grads);
+      stl_clear_object(&this->outputs);
+      stl_clear_object(&this->grads);
 
       // get data
       train_data = std::move(this->dataset->get_train_data(batch_size));
