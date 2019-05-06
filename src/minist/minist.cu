@@ -62,6 +62,8 @@ void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
       labels = &train_data.second;
       idx++;
     }
+
+    this->test(batch_size);
   }
 }
 

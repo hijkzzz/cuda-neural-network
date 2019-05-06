@@ -2,7 +2,7 @@
 #include <minist.cuh>
 
 #define BATCH_SIZE 32
-#define LEARNING_RATE 0.01
+#define LEARNING_RATE 0.005
 #define L2 0.0001
 #define EPOCHS 10
 #define BETA 0.99
@@ -30,5 +30,4 @@ int main() {
   //  }
 
   minist.train(LEARNING_RATE, L2, BATCH_SIZE, EPOCHS, BETA);
-  minist.test(BATCH_SIZE);
 }
