@@ -25,7 +25,7 @@ cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build
 
-# Download the minist dataset from http://yann.lecun.com/exdb/mnist/
+# Download the mnist dataset from http://yann.lecun.com/exdb/mnist/
 # Unzip and put to ./mnist_data
 ./mnist
 ```
