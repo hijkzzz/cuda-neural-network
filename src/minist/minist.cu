@@ -51,8 +51,8 @@ void Minist::train(float learing_rate, float l2, int batch_size, int epochs,
       this->update_weights(learing_rate, l2, beta);
 
       // clear outputs/grads
-      this->outputs.clear();
-      this->grads.clear();
+      stl_clear_object(&this->outputs);
+      stl_clear_object(&this->grads);
 
       // get data
       train_data = this->dataset->get_train_data(batch_size);
@@ -105,7 +105,7 @@ void Minist::test(int batch_size) {
     total += size;
 
     // clear outputs
-    this->outputs.clear();
+    stl_clear_object(&this->outputs);
 
     // get data
     test_data = this->dataset->get_test_data(batch_size);
