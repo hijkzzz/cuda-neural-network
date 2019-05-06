@@ -14,8 +14,7 @@ Storage::Storage(const std::vector<int> &_shape, float value) {
 
   int size = thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
                             thrust::multiplies<int>());
-  this->data.resize(size);
-  thrust::fill(this->data.begin(), this->data.end(), value);
+  this->data.resize(size, value);
 }
 
 Storage::Storage(const std::vector<int> &_shape,
@@ -25,7 +24,6 @@ Storage::Storage(const std::vector<int> &_shape,
 
   this->data.resize(_data.size());
   thrust::copy(_data.begin(), _data.end(), this->data.begin());
-
   this->check_size();
 }
 
@@ -46,8 +44,7 @@ Storage::Storage(const thrust::device_vector<int> &_shape, float value) {
 
   int size = thrust::reduce(this->shape.begin(), this->shape.end(), (int)1,
                             thrust::multiplies<int>());
-  this->data.resize(size);
-  thrust::fill(this->data.begin(), this->data.end(), value);
+  this->data.resize(size, value);
 }
 
 Storage::Storage(const thrust::device_vector<int> &_shape,
