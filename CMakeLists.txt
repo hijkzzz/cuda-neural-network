@@ -9,7 +9,7 @@ option(UNIT_TEST "googletest" ON)
 find_package(CUDA)
 include_directories(${CUDA_INCLUDE_DIRS})
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_61,code=sm_61")
-set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -g -lineinfo")
+set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -g -G")
  
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -std=c++14")
