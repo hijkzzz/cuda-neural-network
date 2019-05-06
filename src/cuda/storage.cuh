@@ -21,6 +21,8 @@ class Storage {
 
   Storage(const Storage& other);
   Storage& operator=(const Storage& other);
+  Storage(Storage&& other);
+  Storage& operator=(Storage&& other);
   ~Storage();
 
   void xavier(size_t in_size, size_t out_size);
