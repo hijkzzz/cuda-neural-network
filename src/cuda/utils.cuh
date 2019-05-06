@@ -4,7 +4,7 @@
 #include <thrust/device_vector.h>
 #include <iostream>
 
-#define BLOCK_SIZE 512
+#define BLOCK_SIZE 256
 #define TILE_SIZE 16
 
 #define CHECK_EQ(val1, val2, message)                              \
@@ -28,16 +28,15 @@
 
 #define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
 
-inline __host__ __device__ void index2loc(int index, const int *shape, int dims,
-                                          int *loc) {
+inline __device__ void index2loc(int index, const int *shape, int dims,
+                                 int *loc) {
   for (int i = dims - 1; i >= 0; i--) {
     loc[i] = index % shape[i];
     index /= shape[i];
   }
 }
 
-inline __host__ __device__ int loc2index(const int *loc, const int *shape,
-                                         int dims) {
+inline __device__ int loc2index(const int *loc, const int *shape, int dims) {
   int index = 0;
   int base = 1;
   for (int i = dims - 1; i >= 0; i--) {
@@ -47,13 +46,13 @@ inline __host__ __device__ int loc2index(const int *loc, const int *shape,
   return index;
 }
 
-inline __host__ __device__ void swap(int &a, int &b) {
+inline __device__ void swap(int &a, int &b) {
   int temp = a;
   a = b;
   b = temp;
 }
 
-inline __host__ __device__ void swap(float &a, float &b) {
+inline __device__ void swap(float &a, float &b) {
   float temp = a;
   a = b;
   b = temp;

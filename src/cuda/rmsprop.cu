@@ -1,4 +1,4 @@
-﻿#include <rmsprop.cuh>
+#include <rmsprop.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/transform.h>
@@ -39,49 +39,42 @@ struct l2_grads_functor {
 void rmsprop_update(Storage *square_grads, Storage *weights,
                     const Storage *grads, float learning_rate, float l2,
                     float beta) {
-  // need reduce
-  const Storage *reduce_grads = grads;
-  bool reduce = false;
+  // reduce grads
+  Storage *reduce_grads = nullptr;
   if (grads->data.size() > weights->data.size()) {
-    reduce_grads = operator_sum(grads, 0);
-    reduce = true;
+    reduce_grads = new Storage();
+    operator_sum(grads, 0, reduce_grads);
+    grads = reduce_grads;
   }
 
-  CHECK_EQ(square_grads->data.size(), reduce_grads->data.size(),
+  CHECK_EQ(square_grads->data.size(), grads->data.size(),
            "RMSProp: grads size error 1");
-  CHECK_EQ(weights->data.size(), reduce_grads->data.size(),
+  CHECK_EQ(weights->data.size(), grads->data.size(),
            "RMSProp: grads size error 2");
 
   // add L2 weights grads
   l2_grads_functor l2f(l2);
-  thrust::device_vector<float> l2_grads(reduce_grads->data.size());
-  thrust::transform(reduce_grads->data.begin(), reduce_grads->data.end(),
+  thrust::device_vector<float> l2_grads(grads->data.size());
+  thrust::transform(grads->data.begin(), grads->data.end(),
                     weights->data.begin(), l2_grads.begin(), l2f);
 
   // rms grads
   rms_suqare_grads_functor sgf(beta);
-  thrust::device_vector<float> new_square_grads(reduce_grads->data.size());
   thrust::transform(square_grads->data.begin(), square_grads->data.end(),
-                    l2_grads.begin(), new_square_grads.begin(), sgf);
-
-  thrust::copy(new_square_grads.begin(), new_square_grads.end(),
-               square_grads->data.begin());
+                    l2_grads.begin(), square_grads->data.begin(), sgf);
 
   rms_grads_functor gf(learning_rate);
-  thrust::device_vector<float> rms_grads(reduce_grads->data.size());
-  thrust::transform(reduce_grads->data.begin(), reduce_grads->data.end(),
+  thrust::device_vector<float> rms_grads(l2_grads.size());
+  thrust::transform(l2_grads.begin(), l2_grads.end(),
                     square_grads->data.begin(), rms_grads.begin(), gf);
 
   // update weights
-  thrust::device_vector<float> new_weights(weights->data.size());
   thrust::transform(weights->data.begin(), weights->data.end(),
-                    rms_grads.begin(), new_weights.begin(),
+                    rms_grads.begin(), weights->data.begin(),
                     thrust::minus<float>());
 
-  thrust::copy(new_weights.begin(), new_weights.end(), weights->data.begin());
-
   // clean
-  if (reduce) {
+  if (reduce_grads != nullptr) {
     delete reduce_grads;
   }
 }

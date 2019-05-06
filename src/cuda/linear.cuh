@@ -1,12 +1,15 @@
-﻿#pragma once
+#pragma once
 
 #include <blas.cuh>
 
-Storage *operator_linear(const Storage *inputs, const Storage *weights);
+void operator_linear(const Storage *inputs, const Storage *weights,
+                     Storage *output);
 
-Storage *operator_d_linear(const Storage *outputs_grad, const Storage *inputs,
-                           const Storage *weights, Storage *weights_grad);
+void operator_d_linear(const Storage *outputs_grad, const Storage *inputs,
+                       const Storage *weights, Storage *weights_grad,
+                       Storage *inputs_grad);
 
-Storage *operator_bias(const Storage *inputs, const Storage *bias);
+void operator_bias(const Storage *inputs, const Storage *bias, Storage *output);
 
-Storage *operator_d_bias(const Storage *outputs_grad, Storage *bias_grad);
+void operator_d_bias(const Storage *outputs_grad, Storage *bias_grad,
+                     Storage *inputs_grad);

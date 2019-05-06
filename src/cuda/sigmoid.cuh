@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #include <blas.cuh>
 
-Storage *operator_sigmoid(const Storage *input1);
+void operator_sigmoid(const Storage *input1, Storage *output);
 
-Storage *operator_d_sigmoid(const Storage *outputs_grad,
-                            const Storage *input1);
+void operator_d_sigmoid(const Storage *outputs_grad,
+                            const Storage *input1, Storage *inputs_grad);

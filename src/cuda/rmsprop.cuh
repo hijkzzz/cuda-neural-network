@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <blas.cuh>
 
 void rmsprop_update(Storage *square_grads, Storage *weights,

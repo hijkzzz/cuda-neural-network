@@ -1,10 +1,10 @@
-#include <dataset.cuh>
+﻿#include <dataset.cuh>
 #include <minist.cuh>
 
 #define BATCH_SIZE 64
 #define LEARNING_RATE 0.01
 #define L2 0.001
-#define EPOCHS 30
+#define EPOCHS 10
 #define BETA 0.99
 
 void show_image(const std::vector<float> &image, int label, int height,

@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #include <blas.cuh>
 
-Storage *operator_log_softmax(const Storage *input1, int dim);
+void operator_log_softmax(const Storage *input1, int dim, Storage *outputs);
 
-Storage *operator_d_log_softmax(const Storage *output_grads,
-                                const Storage *input1, int dim);
+void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
+                            int dim, Storage *inputs_grad);

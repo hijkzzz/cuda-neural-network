@@ -1,4 +1,4 @@
-#include <max_pool.cuh>
+﻿#include <max_pool.cuh>
 
 __global__ void operator_max_pool_h(
     const int nthreads, const float* const bottom_data, const int channels,
@@ -81,9 +81,9 @@ __global__ void operator_d_max_pool_h(
   }
 }
 
-Storage* operator_max_pool(const Storage* inputs, Storage* mask, int kernel_h,
-                           int kernel_w, int pad_h, int pad_w, int stride_h,
-                           int stride_w) {
+void operator_max_pool(const Storage* inputs, Storage* mask, int kernel_h,
+                       int kernel_w, int pad_h, int pad_w, int stride_h,
+                       int stride_w, Storage* output) {
   CHECK_EQ(inputs->shape.size(), 4, "operator_max_pool: inputs shape error");
 
   int width = *(inputs->shape.rbegin());
@@ -96,11 +96,12 @@ Storage* operator_max_pool(const Storage* inputs, Storage* mask, int kernel_h,
 
   mask->data.resize({batch_size * channels * pooled_height * pooled_width});
   mask->reshape({batch_size, channels, pooled_height, pooled_width});
-  Storage* outputs =
-      new Storage({batch_size, channels, pooled_height, pooled_width});
+
+  output->data.resize(batch_size * channels * pooled_height * pooled_width);
+  output->reshape({batch_size, channels, pooled_height, pooled_width});
 
   const float* inputs_data_ptr = thrust::raw_pointer_cast(inputs->data.data());
-  float* outputs_data_ptr = thrust::raw_pointer_cast(outputs->data.data());
+  float* outputs_data_ptr = thrust::raw_pointer_cast(output->data.data());
   float* mask_data_ptr = thrust::raw_pointer_cast(mask->data.data());
 
   int num_kernels = batch_size * channels * pooled_height * pooled_width;
@@ -112,12 +113,12 @@ Storage* operator_max_pool(const Storage* inputs, Storage* mask, int kernel_h,
       outputs_data_ptr, mask_data_ptr);
 
   CUDA_POST_KERNEL_CHECK;
-  return outputs;
 }
 
-Storage* operator_d_max_pool(const Storage* output_grads, const Storage* inputs,
-                             const Storage* mask, int kernel_h, int kernel_w,
-                             int pad_h, int pad_w, int stride_h, int stride_w) {
+void operator_d_max_pool(const Storage* output_grads, const Storage* inputs,
+                         const Storage* mask, int kernel_h, int kernel_w,
+                         int pad_h, int pad_w, int stride_h, int stride_w,
+                         Storage* inputs_grad) {
   CHECK_EQ(output_grads->shape.size(), 4,
            "operator_d_max_pool: output_grads shape error");
   CHECK_EQ(inputs->shape.size(), 4, "operator_d_max_pool: inputs shape error");
@@ -131,8 +132,8 @@ Storage* operator_d_max_pool(const Storage* output_grads, const Storage* inputs,
   int pooled_height = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int pooled_width = (width + 2 * pad_w - kernel_w) / stride_w + 1;
 
-  Storage* inputs_grad =
-      new Storage({batch_size, channels, height, width});
+  inputs_grad->data.resize(batch_size * channels * height * width);
+  inputs_grad->reshape({batch_size, channels, height, width});
 
   const float* inputs_data_ptr = thrust::raw_pointer_cast(inputs->data.data());
   const float* outputs_grad_ptr =
@@ -149,5 +150,4 @@ Storage* operator_d_max_pool(const Storage* output_grads, const Storage* inputs,
       pad_h, pad_w, inputs_grad_ptr);
 
   CUDA_POST_KERNEL_CHECK;
-  return inputs_grad;
 }

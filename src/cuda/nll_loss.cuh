@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include <blas.cuh>
 
-Storage *operator_nll_loss(const Storage *log_p, const Storage *y);
+void operator_nll_loss(const Storage *log_p, const Storage *y, Storage *output);
 
-Storage *operator_d_nll_loss(const Storage *y);
+void operator_d_nll_loss(const Storage *y, Storage *inputs_grad);

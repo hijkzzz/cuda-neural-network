@@ -8,15 +8,17 @@
 
 #include <cfloat>
 
-Storage *operator_add(const Storage *input1, const Storage *input2) {
+void operator_add(const Storage *input1, const Storage *input2,
+                  Storage *outputs) {
   CHECK_EQ(input1->data.size(), input2->data.size(),
            "operator_add: error size");
 
-  Storage *output = new Storage(input1->shape);
+  outputs->data.resize(input1->data.size());
+  outputs->reshape(input1->shape);
+
   thrust::transform(input1->data.begin(), input1->data.end(),
-                    input2->data.begin(), output->data.begin(),
+                    input2->data.begin(), outputs->data.begin(),
                     thrust::plus<float>());
-  return output;
 }
 
 struct add_functor {
@@ -25,35 +27,39 @@ struct add_functor {
   __host__ __device__ float operator()(const float &x) const { return x + e; }
 };
 
-Storage *operator_add(const Storage *input1, float value) {
-  Storage *output = new Storage(input1->shape);
+void operator_add(const Storage *input1, float value, Storage *outputs) {
+  outputs->data.resize(input1->data.size());
+  outputs->reshape(input1->shape);
+
   add_functor f(value);
   thrust::transform(input1->data.begin(), input1->data.end(),
-                    output->data.begin(), f);
-
-  return output;
+                    outputs->data.begin(), f);
 }
 
-Storage *operator_sub(const Storage *input1, const Storage *input2) {
+void operator_sub(const Storage *input1, const Storage *input2,
+                  Storage *outputs) {
   CHECK_EQ(input1->data.size(), input2->data.size(),
            "operator_sub: error size");
 
-  Storage *output = new Storage(input1->shape);
+  outputs->data.resize(input1->data.size());
+  outputs->reshape(input1->shape);
+
   thrust::transform(input1->data.begin(), input1->data.end(),
-                    input2->data.begin(), output->data.begin(),
+                    input2->data.begin(), outputs->data.begin(),
                     thrust::minus<float>());
-  return output;
 }
 
-Storage *operator_mul(const Storage *input1, const Storage *input2) {
+void operator_mul(const Storage *input1, const Storage *input2,
+                  Storage *outputs) {
   CHECK_EQ(input1->data.size(), input2->data.size(),
            "operator_mul: error size");
 
-  Storage *output = new Storage(input1->shape);
+  outputs->data.resize(input1->data.size());
+  outputs->reshape(input1->shape);
+
   thrust::transform(input1->data.begin(), input1->data.end(),
-                    input2->data.begin(), output->data.begin(),
+                    input2->data.begin(), outputs->data.begin(),
                     thrust::multiplies<float>());
-  return output;
 }
 
 struct mul_functor {
@@ -62,24 +68,23 @@ struct mul_functor {
   __host__ __device__ float operator()(const float &x) const { return x * e; }
 };
 
-Storage *operator_mul(const Storage *input1, float value) {
-  Storage *output = new Storage(input1->shape);
+void operator_mul(const Storage *input1, float value, Storage *outputs) {
+  outputs->data.resize(input1->data.size());
+  outputs->reshape(input1->shape);
+
   mul_functor f(value);
   thrust::transform(input1->data.begin(), input1->data.end(),
-                    output->data.begin(), f);
-
-  return output;
+                    outputs->data.begin(), f);
 }
 
-Storage *operator_div(const Storage *input1, const Storage *input2) {
+void operator_div(const Storage *input1, const Storage *input2,
+                  Storage *outputs) {
   CHECK_EQ(input1->data.size(), input2->data.size(),
            "operator_div: error size");
 
-  Storage *output = new Storage(input1->shape);
   thrust::transform(input1->data.begin(), input1->data.end(),
-                    input2->data.begin(), output->data.begin(),
+                    input2->data.begin(), outputs->data.begin(),
                     thrust::divides<float>());
-  return output;
 }
 
 struct pow_functor {
@@ -90,39 +95,39 @@ struct pow_functor {
   }
 };
 
-Storage *operator_pow(const Storage *input1, float e) {
-  Storage *output = new Storage(input1->shape);
+void operator_pow(const Storage *input1, float e, Storage *outputs) {
+  outputs->data.resize(input1->data.size());
+  outputs->reshape(input1->shape);
+
   pow_functor f(e);
   thrust::transform(input1->data.begin(), input1->data.end(),
-                    output->data.begin(), f);
-
-  return output;
+                    outputs->data.begin(), f);
 }
 
 struct log_functor {
   __host__ __device__ float operator()(const float &x) const { return logf(x); }
 };
 
-Storage *operator_log(const Storage *input1) {
-  Storage *output = new Storage(input1->shape);
+void operator_log(const Storage *input1, Storage *outputs) {
+  outputs->data.resize(input1->data.size());
+  outputs->reshape(input1->shape);
+
   log_functor f;
   thrust::transform(input1->data.begin(), input1->data.end(),
-                    output->data.begin(), f);
-
-  return output;
+                    outputs->data.begin(), f);
 }
 
 struct exp_functor {
   __host__ __device__ float operator()(const float &x) const { return expf(x); }
 };
 
-Storage *operator_exp(const Storage *input1) {
-  Storage *output = new Storage(input1->shape);
+void operator_exp(const Storage *input1, Storage *outputs) {
+  outputs->data.resize(input1->data.size());
+  outputs->reshape(input1->shape);
+
   exp_functor f;
   thrust::transform(input1->data.begin(), input1->data.end(),
-                    output->data.begin(), f);
-
-  return output;
+                    outputs->data.begin(), f);
 }
 
 __global__ void operator_matmul_h(const float *input1, const float *input2,
@@ -164,7 +169,8 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
   if (row < height && col < width) output[row * width + col] = v;
 }
 
-Storage *operator_matmul(const Storage *input1, const Storage *input2) {
+void operator_matmul(const Storage *input1, const Storage *input2,
+                     Storage *outputs) {
   int height = *(input1->shape.rbegin() + 1);
   int k = *(input1->shape.rbegin());
   int width = *(input2->shape.rbegin());
@@ -175,12 +181,12 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
     batch_size *= *i;
   }
 
+  outputs->data.resize(batch_size * height * width);
+  outputs->reshape({batch_size, height, width});
+
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const float *input2_ptr = thrust::raw_pointer_cast(input2->data.data());
-  thrust::device_vector<int> new_shape(input1->shape);
-  *(new_shape.rbegin()) = width;
-  Storage *output = new Storage(new_shape);
-  float *output_ptr = thrust::raw_pointer_cast(output->data.data());
+  float *output_ptr = thrust::raw_pointer_cast(outputs->data.data());
 
   dim3 dim_block(TILE_SIZE, TILE_SIZE);
   dim3 dim_grid(batch_size, ceil((float)height / TILE_SIZE),
@@ -189,7 +195,6 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
                                              height, k, width);
 
   CUDA_POST_KERNEL_CHECK;
-  return output;
 }
 
 __global__ void operator_transpose_h(const float *input1, float *output,
@@ -209,15 +214,18 @@ __global__ void operator_transpose_h(const float *input1, float *output,
   }
 }
 
-Storage *operator_transpose(const Storage *input1, int dim0, int dim1) {
+void operator_transpose(const Storage *input1, int dim0, int dim1,
+                        Storage *outputs) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
 
-  thrust::device_vector<int> new_shape(input1->shape);
-  swap(new_shape[dim0], new_shape[dim1]);
-  Storage *output = new Storage(new_shape);
-  float *output_ptr = thrust::raw_pointer_cast(output->data.data());
-  int *output_shape_ptr = thrust::raw_pointer_cast(output->shape.data());
+  outputs->data.resize(input1->data.size());
+  std::vector<int> tran_shape(input1->shape.begin(), input1->shape.end());
+  std::swap(tran_shape[dim0], tran_shape[dim1]);
+  outputs->reshape(tran_shape);
+
+  float *output_ptr = thrust::raw_pointer_cast(outputs->data.data());
+  int *output_shape_ptr = thrust::raw_pointer_cast(outputs->shape.data());
 
   int size = input1->data.size();
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
@@ -226,20 +234,19 @@ Storage *operator_transpose(const Storage *input1, int dim0, int dim1) {
       output_shape_ptr, dim0, dim1, size);
 
   CUDA_POST_KERNEL_CHECK;
-  return output;
 }
 
 __global__ void operator_mean_h(const float *input1, float *output,
                                 const int *input1_shape, int input1_dims,
-                                const int *output_shape, int dim,
-                                int dim_stride, int size) {
+                                const int *temp_shape, int dim, int dim_stride,
+                                int size) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
     int length = input1_shape[dim];
 
     int *loc = new int[input1_dims];
-    index2loc(index, output_shape, input1_dims - 1, loc);
+    index2loc(index, temp_shape, input1_dims - 1, loc);
     for (int i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
     }
@@ -256,15 +263,25 @@ __global__ void operator_mean_h(const float *input1, float *output,
   }
 }
 
-Storage *operator_mean(const Storage *input1, int dim) {
+void operator_mean(const Storage *input1, int dim, Storage *outputs) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
 
-  thrust::device_vector<int> new_shape(input1->shape);
-  new_shape.erase(new_shape.begin() + dim);
-  Storage *output = new Storage(new_shape);
-  float *output_ptr = thrust::raw_pointer_cast(output->data.data());
-  int *output_shape_ptr = thrust::raw_pointer_cast(output->shape.data());
+  float *output_ptr = thrust::raw_pointer_cast(outputs->data.data());
+  thrust::device_vector<int> temp_shape(input1->shape);
+  temp_shape.erase(temp_shape.begin() + dim);
+  int *temp_shape_ptr = thrust::raw_pointer_cast(temp_shape.data());
+
+  // resize & reshape
+  outputs->data.resize(input1->shape.size() / input1->shape[dim]);
+  outputs->reshape(temp_shape);
+
+  if (outputs->shape.size() == 1) {
+    if (dim == 1)
+      outputs->reshape(std::vector<int>{*outputs->shape.begin(), 1});
+    else
+      outputs->reshape(std::vector<int>{1, *outputs->shape.begin()});
+  }
 
   int input1_dims = input1->shape.size();
   int dim_stride = 1;
@@ -272,27 +289,18 @@ Storage *operator_mean(const Storage *input1, int dim) {
     dim_stride *= input1->shape[i];
   }
 
-  int size = output->data.size();
+  int size = outputs->data.size();
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_mean_h<<<grid_size, BLOCK_SIZE>>>(
-      input1_ptr, output_ptr, input1_shape_ptr, input1_dims, output_shape_ptr,
+      input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
       dim, dim_stride, size);
 
   CUDA_POST_KERNEL_CHECK;
-
-  if (output->shape.size() == 1) {
-    if (dim == 1) {
-      output->reshape(std::vector<int>{*output->shape.begin(), 1});
-    } else {
-      output->reshape(std::vector<int>{1, *output->shape.begin()});
-    }
-  }
-  return output;
 }
 
 __global__ void operator_sum_h(const float *input1, float *output,
                                const int *input1_shape, int input1_dims,
-                               const int *output_shape, int dim, int dim_stride,
+                               const int *temp_shape, int dim, int dim_stride,
                                int size) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -300,7 +308,7 @@ __global__ void operator_sum_h(const float *input1, float *output,
     int length = input1_shape[dim];
 
     int *loc = new int[input1_dims];
-    index2loc(index, output_shape, input1_dims - 1, loc);
+    index2loc(index, temp_shape, input1_dims - 1, loc);
     for (int i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
     }
@@ -317,15 +325,25 @@ __global__ void operator_sum_h(const float *input1, float *output,
   }
 }
 
-Storage *operator_sum(const Storage *input1, int dim) {
+void operator_sum(const Storage *input1, int dim, Storage *outputs) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
 
-  thrust::device_vector<int> new_shape(input1->shape);
-  new_shape.erase(new_shape.begin() + dim);
-  Storage *output = new Storage(new_shape);
-  float *output_ptr = thrust::raw_pointer_cast(output->data.data());
-  int *output_shape_ptr = thrust::raw_pointer_cast(output->shape.data());
+  float *output_ptr = thrust::raw_pointer_cast(outputs->data.data());
+  thrust::device_vector<int> temp_shape(input1->shape);
+  temp_shape.erase(temp_shape.begin() + dim);
+  int *temp_shape_ptr = thrust::raw_pointer_cast(temp_shape.data());
+
+  // resize & reshape
+  outputs->data.resize(input1->shape.size() / input1->shape[dim]);
+  outputs->reshape(temp_shape);
+
+  if (outputs->shape.size() == 1) {
+    if (dim == 1)
+      outputs->reshape(std::vector<int>{*outputs->shape.begin(), 1});
+    else
+      outputs->reshape(std::vector<int>{1, *outputs->shape.begin()});
+  }
 
   int input1_dims = input1->shape.size();
   int dim_stride = 1;
@@ -333,20 +351,11 @@ Storage *operator_sum(const Storage *input1, int dim) {
     dim_stride *= input1->shape[i];
   }
 
-  int size = output->data.size();
+  int size = outputs->data.size();
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_sum_h<<<grid_size, BLOCK_SIZE>>>(
-      input1_ptr, output_ptr, input1_shape_ptr, input1_dims, output_shape_ptr,
+      input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
       dim, dim_stride, size);
 
   CUDA_POST_KERNEL_CHECK;
-
-  if (output->shape.size() == 1) {
-    if (dim == 1) {
-      output->reshape(std::vector<int>{*output->shape.begin(), 1});
-    } else {
-      output->reshape(std::vector<int>{1, *output->shape.begin()});
-    }
-  }
-  return output;
 }

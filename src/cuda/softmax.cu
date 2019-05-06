@@ -1,4 +1,4 @@
-﻿#include <softmax.cuh>
+#include <softmax.cuh>
 
 __global__ void operator_log_softmax_h(const float *input1, float *output,
                                        const int *input1_shape, int input1_dims,
@@ -35,11 +35,13 @@ __global__ void operator_log_softmax_h(const float *input1, float *output,
   }
 }
 
-Storage *operator_log_softmax(const Storage *input1, int dim) {
+void operator_log_softmax(const Storage *input1, int dim, Storage *outputs) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
-  Storage *output = new Storage(input1->shape);
-  float *output_ptr = thrust::raw_pointer_cast(output->data.data());
+  float *output_ptr = thrust::raw_pointer_cast(outputs->data.data());
+
+  outputs->data.resize(input1->data.size());
+  outputs->reshape(input1->shape);
 
   thrust::device_vector<int> temp_shape(input1->shape);
   temp_shape.erase(temp_shape.begin() + dim);
@@ -58,7 +60,6 @@ Storage *operator_log_softmax(const Storage *input1, int dim) {
       dim, dim_stride, size);
 
   CUDA_POST_KERNEL_CHECK;
-  return output;
 }
 
 __global__ void operator_d_log_softmax_h(const float *output_grads,
@@ -109,15 +110,16 @@ __global__ void operator_d_log_softmax_h(const float *output_grads,
 
 // Y = log_softmax(X) = x - log(exp(X) * 1_n) * 1_n^T
 // dL/dX = dL/dY - (dL/dY * 1_n * exp(x)) / (exp(x) * 1_n)
-Storage *operator_d_log_softmax(const Storage *output_grads,
-                                const Storage *input1, int dim) {
+void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
+                            int dim, Storage *inputs_grad) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
   const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
   const float *output_grads_ptr =
       thrust::raw_pointer_cast(output_grads->data.data());
 
-  Storage *input1_grads = new Storage(input1->shape);
-  float *input1_grads_ptr = thrust::raw_pointer_cast(input1_grads->data.data());
+  float *input1_grads_ptr = thrust::raw_pointer_cast(inputs_grad->data.data());
+  inputs_grad->data.resize(input1->data.size());
+  inputs_grad->reshape(input1->shape);
 
   thrust::device_vector<int> temp_shape(input1->shape);
   temp_shape.erase(temp_shape.begin() + dim);
@@ -136,5 +138,4 @@ Storage *operator_d_log_softmax(const Storage *output_grads,
       input1_dims, dim, dim_stride, size, input1_grads_ptr);
 
   CUDA_POST_KERNEL_CHECK;
-  return input1_grads;
 }
