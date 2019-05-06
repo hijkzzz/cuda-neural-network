@@ -1,8 +1,8 @@
-﻿cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.8)
 project(neural_network LANGUAGES CUDA CXX)
 
 # option
-option(MINIST "minst demo" ON)
+option(MNIST "mnist demo" ON)
 option(UNIT_TEST "googletest" ON)
 
 # find cuda
@@ -35,7 +35,7 @@ file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/*.cuh)
 file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/cuda/*.cu)
 
 source_group("Include" FILES ${HEADERS})
-source_group("Source" FILES ${SOURCES} ${PYBIND11_SOURCES})
+source_group("Source" FILES ${SOURCES})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/cuda)
 
@@ -43,14 +43,14 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/cuda)
 add_library(cu STATIC ${SOURCES})
 target_link_libraries(cu PUBLIC cuda)
 
-# minist demo
-if (MINIST) 
-    set(MINIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/minist)
+# mnist demo
+if (MNIST) 
+    set(MINIST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/mnist)
     file(GLOB MINIST_SRCS ${MINIST_DIR}/*.cu)
 
-    add_executable(minist ${MINIST_SRCS})
-    target_include_directories(minist PRIVATE ${MINIST_DIR})
-    target_link_libraries(minist cu)
+    add_executable(mnist ${MINIST_SRCS})
+    target_include_directories(mnist PRIVATE ${MINIST_DIR})
+    target_link_libraries(mnist cu)
 endif()
 
 # unit test

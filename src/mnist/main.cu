@@ -19,7 +19,7 @@ void show_image(const std::vector<float> &image, int label, int height,
 }
 
 int main() {
-  DataSet dataset("../minist_data", true);
+  DataSet dataset("../mnist_data", true);
   Minist minist(&dataset);
 
   // show images
