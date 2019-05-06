@@ -32,11 +32,11 @@ cmake --build
 
 ## Performance
 * 1 epoch 95%
-* 10 epochs 98%
+* 10 epochs 99%
 
 ## TODO
-* Allocate GPU memory at once
 * Use CUDA Streams
+* Allocate GPU memory at once
 
 ## References
 * [High Performance Convolutional Neural Networks for Document Processing](https://hal.inria.fr/file/index/docid/112631/filename/p1038112283956.pdf)
