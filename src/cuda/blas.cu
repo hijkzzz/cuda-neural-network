@@ -130,13 +130,13 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
   __shared__ float shared_input1[TILE_SIZE][TILE_SIZE];
   __shared__ float shared_input2[TILE_SIZE][TILE_SIZE];
 
-  int batch_idx = blockIdx.z;
+  int batch_idx = blockIdx.x;
   input1 += batch_idx * height * k;
   input2 += batch_idx * k * width;
   output += batch_idx * height * width;
 
-  int bx = blockIdx.x;
-  int by = blockIdx.y;
+  int bx = blockIdx.y;
+  int by = blockIdx.z;
   int tx = threadIdx.x;
   int ty = threadIdx.y;
 
@@ -183,8 +183,8 @@ Storage *operator_matmul(const Storage *input1, const Storage *input2) {
   float *output_ptr = thrust::raw_pointer_cast(output->data.data());
 
   dim3 dim_block(TILE_SIZE, TILE_SIZE);
-  dim3 dim_grid(ceil((float)height / TILE_SIZE), ceil((float)width / TILE_SIZE),
-                batch_size);
+  dim3 dim_grid(batch_size, ceil((float)height / TILE_SIZE),
+                ceil((float)width / TILE_SIZE));
   operator_matmul_h<<<dim_grid, dim_block>>>(input1_ptr, input2_ptr, output_ptr,
                                              height, k, width);
 

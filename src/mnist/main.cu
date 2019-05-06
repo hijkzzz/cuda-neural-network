@@ -1,9 +1,9 @@
 #include <dataset.cuh>
 #include <minist.cuh>
 
-#define BATCH_SIZE 32
-#define LEARNING_RATE 0.005
-#define L2 0.0005
+#define BATCH_SIZE 64
+#define LEARNING_RATE 0.01
+#define L2 0.001
 #define EPOCHS 30
 #define BETA 0.99
 
