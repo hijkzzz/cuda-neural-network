@@ -115,6 +115,7 @@ void Minist::test(int batch_size) {
     test_data = std::move(this->dataset->get_test_data(batch_size));
     images = &test_data.first;
     labels = &test_data.second;
+    idx++;
   }
 
   // print test accuracy
