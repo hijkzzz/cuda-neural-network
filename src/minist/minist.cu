@@ -71,7 +71,7 @@ void Minist::test(int batch_size) {
   int corr_count = 0;
 
   // get data
-  auto test_data = this->dataset->get_test_data(batch_size);
+  auto test_data = std::move(this->dataset->get_test_data(batch_size));
   std::vector<std::vector<float>>* images = &test_data.first;
   std::vector<unsigned char>* labels = &test_data.second;
 
@@ -110,7 +110,7 @@ void Minist::test(int batch_size) {
     stl_clear_object(&this->outputs);
 
     // get data
-    test_data = this->dataset->get_test_data(batch_size);
+    test_data = std::move(this->dataset->get_test_data(batch_size));
     images = &test_data.first;
     labels = &test_data.second;
   }
