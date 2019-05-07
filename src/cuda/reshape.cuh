@@ -9,14 +9,23 @@ class ReShape : public Layer {
     const Storage *input = this->pre->get_output();
     this->in_shape = input->get_shape();
 
-    this->output.reset(new Storage(*input));
-    this->output->reshape(out_shape);
+    if (this->output.get() == nullptr ||
+        this->output->get_shape() != out_shape) {
+      this->output.reset(new Storage(out_shape));
+    }
+
+    *this->output = *input;
   }
 
   void backward() {
     const Storage *output_grad = this->next->get_grad();
-    this->grad.reset(new Storage(*output_grad));
-    this->grad->reshape(in_shape);
+
+    if (this->grad.get() == nullptr ||
+        this->grad->get_shape() != this->in_shape) {
+      this->grad.reset(new Storage(in_shape));
+    }
+
+    *this->grad = *output_grad;
   }
 
  private:

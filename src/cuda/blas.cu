@@ -108,15 +108,13 @@ void operator_exp(const Storage *input1, Storage *outputs) {
 
 __global__ void operator_matmul_h(const float *input1, const float *input2,
                                   float *output, int height, int k, int width,
-                                  bool broadcast) {
+                                  int broadcast) {
   __shared__ float shared_input1[TILE_SIZE][TILE_SIZE];
   __shared__ float shared_input2[TILE_SIZE][TILE_SIZE];
 
   int batch_idx = blockIdx.x;
-  input1 += batch_idx * height * k;
-  if (!broadcast) {
-    input2 += batch_idx * k * width;
-  }
+  if (!broadcast == 1) input1 += batch_idx * height * k;
+  if (!broadcast == 2) input2 += batch_idx * k * width;
   output += batch_idx * height * width;
 
   int bx = blockIdx.y;
@@ -149,7 +147,7 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
 }
 
 void operator_matmul(const Storage *input1, const Storage *input2,
-                     Storage *outputs, bool broadcast) {
+                     Storage *outputs, int broadcast) {
   int height = *(input1->get_shape().rbegin() + 1);
   int k = *(input1->get_shape().rbegin());
   int width = *(input2->get_shape().rbegin());
