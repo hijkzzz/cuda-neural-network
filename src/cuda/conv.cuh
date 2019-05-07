@@ -8,15 +8,14 @@
 // High Performance Convolutional Neural Networks for Document Processing
 // https://hal.inria.fr/file/index/docid/112631/filename/p1038112283956.pdf
 
-void im2col(const float *data_im, const int channels, const int height,
-            const int width, const int kernel_h, const int kernel_w,
-            const int pad_h, const int pad_w, const int stride_h,
-            const int stride_w, float *data_col);
-
-void col2im(const float *data_col, const int channels, const int height,
-            const int width, const int kernel_h, const int kernel_w,
-            const int pad_h, const int pad_w, const int stride_h,
-            const int stride_w, float *data_im);
+void im2col(const float *data_im, const int batch_size, const int channels,
+            const int height, const int width, const int kernel_h,
+            const int kernel_w, const int pad_h, const int pad_w,
+            const int stride_h, const int stride_w, float *data_col);
+void col2im(const float *data_col, const int batch_size, const int channels,
+            const int height, const int width, const int kernel_h,
+            const int kernel_w, const int pad_h, const int pad_w,
+            const int stride_h, const int stride_w, float *data_im);
 
 void operator_conv(const Storage *inputs, Storage *filters, Storage *cols,
                    const int pad_h, const int pad_w, const int stride_h,
@@ -29,9 +28,7 @@ void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
 
 void operator_conv_bias(const Storage *inputs, const Storage *bias,
                         Storage *output);
-
-void operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad,
-                          Storage *inputs_grad);
+void operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad);
 
 #endif
 
