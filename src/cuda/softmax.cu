@@ -3,20 +3,19 @@
 __global__ void operator_log_softmax_h(const float *input1, float *output,
                                        const int *input1_shape, int input1_dims,
                                        const int *temp_shape, int dim,
-                                       int dim_stride, int size) {
+                                       int dim_stride, int size, int *loc) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
     int length = input1_shape[dim];
 
-    int *loc = new int[input1_dims];
+    loc += index * input1_dims;
     index2loc(index, temp_shape, input1_dims - 1, loc);
     for (int i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
     }
     loc[dim] = 0;
     int base = loc2index(loc, input1_shape, input1_dims);
-    delete[] loc;
 
     float max_ = -FLT_MAX;
     for (int i = 0; i < length; ++i) {
@@ -36,28 +35,33 @@ __global__ void operator_log_softmax_h(const float *input1, float *output,
 }
 
 void operator_log_softmax(const Storage *input1, int dim, Storage *outputs) {
-  const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
-  const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
-  float *output_ptr = thrust::raw_pointer_cast(outputs->data.data());
+  // input
+  const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
+  const int *input1_shape_ptr =
+      thrust::raw_pointer_cast(input1->get_shape().data());
+  float *output_ptr = thrust::raw_pointer_cast(outputs->get_data().data());
 
-  outputs->data.resize(input1->data.size());
-  outputs->reshape(input1->shape);
-
-  thrust::device_vector<int> temp_shape(input1->shape);
+  thrust::device_vector<int> temp_shape(input1->get_shape());
   temp_shape.erase(temp_shape.begin() + dim);
   int *temp_shape_ptr = thrust::raw_pointer_cast(temp_shape.data());
 
-  int input1_dims = input1->shape.size();
+  // stride
+  int input1_dims = input1->get_shape().size();
   int dim_stride = 1;
   for (int i = dim + 1; i < input1_dims; i++) {
     dim_stride *= input1_shape_ptr[i];
   }
 
-  int size = input1->data.size() / input1->shape[dim];
+  int size = input1->get_data().size() / input1->get_shape()[dim];
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
+
+  // loc buffer
+  thrust::device_vector<int> loc(size * input1_dims);
+  int *loc_ptr = thrust::raw_pointer_cast(loc.data());
+
   operator_log_softmax_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
-      dim, dim_stride, size);
+      dim, dim_stride, size, loc_ptr);
 
   CUDA_POST_KERNEL_CHECK;
 }
@@ -67,20 +71,19 @@ __global__ void operator_d_log_softmax_h(const float *output_grads,
                                          const int *input1_shape,
                                          const int *temp_shape, int input1_dims,
                                          int dim, int dim_stride, int size,
-                                         float *input1_grads) {
+                                         float *input1_grads, int *loc) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
     int length = input1_shape[dim];
 
-    int *loc = new int[input1_dims];
+    loc += index * input1_dims;
     index2loc(index, temp_shape, input1_dims - 1, loc);
     for (int i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
     }
     loc[dim] = 0;
     int base = loc2index(loc, input1_shape, input1_dims);
-    delete[] loc;
 
     float max_ = -FLT_MAX;
     for (int i = 0; i < length; ++i) {
@@ -112,30 +115,56 @@ __global__ void operator_d_log_softmax_h(const float *output_grads,
 // dL/dX = dL/dY - (dL/dY * 1_n * exp(x)) / (exp(x) * 1_n)
 void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
                             int dim, Storage *inputs_grad) {
-  const float *input1_ptr = thrust::raw_pointer_cast(input1->data.data());
-  const int *input1_shape_ptr = thrust::raw_pointer_cast(input1->shape.data());
+  const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
+  const int *input1_shape_ptr =
+      thrust::raw_pointer_cast(input1->get_shape().data());
   const float *output_grads_ptr =
-      thrust::raw_pointer_cast(output_grads->data.data());
+      thrust::raw_pointer_cast(output_grads->get_data().data());
+  float *input1_grads_ptr =
+      thrust::raw_pointer_cast(inputs_grad->get_data().data());
 
-  float *input1_grads_ptr = thrust::raw_pointer_cast(inputs_grad->data.data());
-  inputs_grad->data.resize(input1->data.size());
-  inputs_grad->reshape(input1->shape);
-
-  thrust::device_vector<int> temp_shape(input1->shape);
+  thrust::device_vector<int> temp_shape(input1->get_shape());
   temp_shape.erase(temp_shape.begin() + dim);
   int *temp_shape_ptr = thrust::raw_pointer_cast(temp_shape.data());
 
-  int input1_dims = input1->shape.size();
+  int input1_dims = input1->get_shape().size();
   int dim_stride = 1;
   for (int i = dim + 1; i < input1_dims; i++) {
     dim_stride *= input1_shape_ptr[i];
   }
 
-  int size = input1->data.size() / input1->shape[dim];
+  int size = input1->get_data().size() / input1->get_shape()[dim];
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
+
+  // loc buffer
+  thrust::device_vector<int> loc(size * input1_dims);
+  int *loc_ptr = thrust::raw_pointer_cast(loc.data());
+
   operator_d_log_softmax_h<<<grid_size, BLOCK_SIZE>>>(
       output_grads_ptr, input1_ptr, input1_shape_ptr, temp_shape_ptr,
-      input1_dims, dim, dim_stride, size, input1_grads_ptr);
+      input1_dims, dim, dim_stride, size, input1_grads_ptr, loc_ptr);
 
   CUDA_POST_KERNEL_CHECK;
+}
+
+void LogSoftmax::forward() {
+  const Storage *input = this->pre->get_output();
+  if (this->output.get() == nullptr ||
+      this->output->get_shape() != input->get_shape()) {
+    this->output.reset(new Storage(input->get_shape()));
+  }
+
+  operator_log_softmax(input, this->dim, this->output.get());
+}
+
+void LogSoftmax::backward() {
+  const Storage *input = this->pre->get_output();
+  const Storage *output_grad = this->next->get_grad();
+
+  if (this->grad.get() == nullptr ||
+      this->grad->get_shape() != input->get_shape()) {
+    this->grad.reset(new Storage(input->get_shape()));
+  }
+
+  operator_d_log_softmax(output_grad, input, this->dim, this->grad.get());
 }

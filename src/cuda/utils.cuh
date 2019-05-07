@@ -12,7 +12,7 @@
     if (val1 != val2) {                                            \
       std::cout << __FILE__ << "(" << __LINE__ << "): " << message \
                 << std::endl;                                      \
-      throw std::runtime_error(message);                           \
+      exit(1);                                                     \
     }                                                              \
   } while (0)
 
@@ -28,36 +28,6 @@
 
 #define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
 
-inline __device__ void index2loc(int index, const int *shape, int dims,
-                                 int *loc) {
-  for (int i = dims - 1; i >= 0; i--) {
-    loc[i] = index % shape[i];
-    index /= shape[i];
-  }
-}
-
-inline __device__ int loc2index(const int *loc, const int *shape, int dims) {
-  int index = 0;
-  int base = 1;
-  for (int i = dims - 1; i >= 0; i--) {
-    index += base * loc[i];
-    base *= shape[i];
-  }
-  return index;
-}
-
-inline __device__ void swap(int &a, int &b) {
-  int temp = a;
-  a = b;
-  b = temp;
-}
-
-inline __device__ void swap(float &a, float &b) {
-  float temp = a;
-  a = b;
-  b = temp;
-}
-
 template <class T>
 void stl_clear_object(T *obj) {
   T tmp;
@@ -66,3 +36,8 @@ void stl_clear_object(T *obj) {
   // Hence using additional reserve(0) even if it doesn't always work.
   obj->reserve(0);
 }
+
+__host__ __device__ void index2loc(int index, const int *shape, int dims,
+                                   int *loc);
+__host__ __device__ int loc2index(const int *loc, const int *shape, int dims);
+__host__ __device__ void swap(int &a, int &b);

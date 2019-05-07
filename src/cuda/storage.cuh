@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
@@ -8,19 +8,9 @@
 
 class Storage {
  public:
-  Storage();
-  // std::vector
   Storage(const std::vector<int> &_shape, float value = 0);
   Storage(const std::vector<int> &_shape, const std::vector<float> &_data);
   Storage(const std::vector<int> &_shape,
-          thrust::device_vector<float>::const_iterator begin,
-          thrust::device_vector<float>::const_iterator end);
-
-  // thrust::device_vector
-  Storage(const thrust::device_vector<int> &_shape, float value = 0);
-  Storage(const thrust::device_vector<int> &_shape,
-          const thrust::device_vector<float> &_data);
-  Storage(const thrust::device_vector<int> &_shape,
           thrust::device_vector<float>::const_iterator begin,
           thrust::device_vector<float>::const_iterator end);
 
@@ -30,18 +20,18 @@ class Storage {
   Storage(Storage &&other);
   Storage &operator=(Storage &&other);
 
-  void reshape(const std::vector<int> &_shape);
-  void reshape(const thrust::device_vector<int> &_shape);
   void xavier(size_t in_size, size_t out_size);
+  void reshape(const std::vector<int> &_shape);
 
-  // copy to host
-  std::vector<int> get_shape();
-  std::vector<float> get_data();
-
-  // raw data
-  thrust::device_vector<float> data;
-  thrust::device_vector<int> shape;
+  // get
+  std::vector<int> &get_shape() { return this->shape; };
+  const std::vector<int> &get_shape() const { return this->shape; };
+  thrust::device_vector<float> &get_data() { return this->data; };
+  const thrust::device_vector<float> &get_data() const { return this->data; };
 
  private:
-  void check_size();
+  void check_size();  // check data/shape size
+
+  thrust::device_vector<float> data;
+  std::vector<int> shape;
 };

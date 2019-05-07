@@ -1,6 +1,10 @@
 cmake_minimum_required (VERSION 3.8)
 project(neural_network LANGUAGES CUDA CXX)
 
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+    add_definitions(-DDEBUG)
+endif()
+
 # option
 option(MNIST "mnist demo" ON)
 option(UNIT_TEST "googletest" ON)
@@ -11,7 +15,7 @@ include_directories(${CUDA_INCLUDE_DIRS})
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_61,code=sm_61")
 set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -g -G")
  
-if(CMAKE_COMPILER_IS_GNUCXX)
+if (CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -std=c++14")
 endif()
 
@@ -54,7 +58,7 @@ if (MNIST)
 endif()
 
 # unit test
-if(UNIT_TEST)
+if (UNIT_TEST)
     # find google test
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_parts/googletest)
 
