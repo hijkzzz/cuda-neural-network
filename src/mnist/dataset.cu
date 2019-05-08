@@ -28,30 +28,71 @@ void DataSet::reset() {
   }
 }
 
-std::pair<std::vector<std::vector<float>>, std::vector<unsigned char>>
-DataSet::get_train_data(int batch_size) {
-  int start = this->train_data_index;
-  int end = std::min(this->train_data_index + batch_size,
-                     (int)this->train_data.size());
-  this->train_data_index = end;
+void DataSet::forward(int batch_size, bool is_train) {
+  if (is_train) {
+    int start = this->train_data_index;
+    int end = std::min(this->train_data_index + batch_size,
+                       (int)this->train_data.size());
+    this->train_data_index = end;
+    int size = end - start;
 
-  return {std::vector<std::vector<float>>(this->train_data.begin() + start,
-                                          this->train_data.begin() + end),
-          std::vector<unsigned char>(this->train_data.begin() + start,
-                                     this->train_data.begin() + end)};
+    std::vector<int> output_shape{size, 1, this->height, this->width};
+    if (this->output.get() == nullptr ||
+        this->output->get_shape() != output_shape) {
+      this->output.reset(new Storage(output_shape));
+      this->ouput_label.reset(new Storage({size, 10}));
+    }
+
+    int im_stride = 1 * this->height * this->width;
+    int one_hot_stride = 10;
+    for (int i = start; i < end; i++) {
+      thrust::copy(this->train_data[i].begin(), this->train_data[i].end(),
+                   this->output->get_data().begin() + (i - start) * im_stride);
+      this->output_label
+          ->get_data()[(i - start) * one_hot_stride + this->train_label[i]] = 1;
+    }
+
+  } else {
+    int start = this->test_data_index;
+    int end = std::min(this->test_data_index + batch_size,
+                       (int)this->test_data.size());
+    this->test_data_index = end;
+
+    std::vector<int> output_shape{size, 1, this->height, this->width};
+    if (this->output.get() == nullptr ||
+        this->output->get_shape() != output_shape) {
+      this->output.reset(new Storage(output_shape));
+      this->ouput_label.reset(new Storage({size, 10}));
+    }
+
+    int im_stride = 1 * this->height * this->width;
+    int one_hot_stride = 10;
+    for (int i = start; i < end; i++) {
+      thrust::copy(this->test_data[i].begin(), this->test_data[i].end(),
+                   this->output->get_data().begin() + (i - start) * im_stride);
+      this->output_label
+          ->get_data()[(i - start) * one_hot_stride + this->test_label[i]] = 1;
+    }
+  }
 }
 
-std::pair<std::vector<std::vector<float>>, std::vector<unsigned char>>
-DataSet::get_test_data(int batch_size) {
-  int start = this->test_data_index;
-  int end =
-      std::min(this->test_data_index + batch_size, (int)this->test_data.size());
-  this->test_data_index = end;
+bool DataSet::has_next(bool is_train) {
+  if (is_train) {
+    return this->train_data_index < this->train_data.size();
+  } else {
+    return this->test_data_index < this->test_data.size();
+  }
+}
 
-  return {std::vector<std::vector<float>>(this->test_data.begin() + start,
-                                          this->test_data.begin() + end),
-          std::vector<unsigned char>(this->test_label.begin() + start,
-                                     this->test_label.begin() + end)};
+void DataSet::print_im(const std::vector<float>& image, int height, int width,
+                       int label) {
+  std::cout << label << std::endl;
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      std::cout << (image[i * width + j] > 0 ? "* " : "  ");
+    }
+    std::cout << std::endl;
+  }
 }
 
 unsigned int DataSet::reverse_int(unsigned int i) {

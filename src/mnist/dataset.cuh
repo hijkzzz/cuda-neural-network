@@ -1,24 +1,27 @@
 #pragma once
 
+#include <layer.cuh>
+
 #include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-class DataSet {
+class DataSet : public Layer {
  public:
   explicit DataSet(std::string minist_data_path, bool shuffle = false);
-
-  std::pair<std::vector<std::vector<float>>, std::vector<unsigned char>>
-  get_train_data(int batch_size);
-  std::pair<std::vector<std::vector<float>>, std::vector<unsigned char>>
-  get_test_data(int batch_size);
-
   void reset();
+
+  void forward(int batch_size, bool is_train);
+  bool has_next(bool is_train);
 
   int get_height() { return this->height; }
   int get_width() { return this->width; }
+  Storage* get_label() { return this->output_label.get() }
+
+  void print_im(const std::vector<float>& image, int height, int width,
+                int label);
 
  private:
   unsigned int reverse_int(unsigned int i);  // big endian
@@ -37,4 +40,5 @@ class DataSet {
   int height;
   int width;
   bool shuffle;
+  std::unique_ptr<Storage> output_label;
 };
