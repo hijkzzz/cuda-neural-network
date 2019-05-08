@@ -10,135 +10,147 @@ TEST(BlasTest, Add) {
   Storage a({3, 3, 3}, -1);
   Storage b({3, 3, 3}, 1);
 
-  std::vector<float> temp(27, 0);
-  std::unique_ptr<Storage> result(operator_add(&a, &b));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+  Storage result({3, 3, 3}, 0.5);
+  operator_add(&a, &b, &result);
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(),
+                                          std::vector<float>(27, 0)));
 }
 
 TEST(BlasTest, Sub) {
   Storage a({3, 3, 3}, 1);
   Storage b({3, 3, 3}, 1);
 
-  std::vector<float> temp(27, 0);
-  std::unique_ptr<Storage> result(operator_sub(&a, &b));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+  Storage result({3, 3, 3}, 0.5);
+  operator_sub(&a, &b, &result);
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(),
+                                          std::vector<float>(27, 0)));
 }
 
 TEST(BlasTest, Mul) {
   Storage a({3, 3, 3}, -1.5);
   Storage b({3, 3, 3}, 2);
 
-  std::vector<float> temp(27, -3);
-  std::unique_ptr<Storage> result(operator_mul(&a, &b));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+  Storage result({3, 3, 3}, 0.5);
+  operator_mul(&a, &b, &result);
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(),
+                                          std::vector<float>(27, -3)));
 }
 
 TEST(BlasTest, Div) {
   Storage a({3, 3, 3}, 1);
   Storage b({3, 3, 3}, 2);
 
-  std::vector<float> temp(27, 0.5);
-  std::unique_ptr<Storage> result(operator_div(&a, &b));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+  Storage result({3, 3, 3});
+  operator_div(&a, &b, &result);
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(),
+                                          std::vector<float>(27, 0.5)));
 }
 
 TEST(BlasTest, Log) {
   Storage a({3, 3, 3}, 3);
 
   std::vector<float> temp(27, log(3));
-  std::unique_ptr<Storage> result(operator_log(&a));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+  Storage result({3, 3, 3});
+  operator_log(&a, &result);
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
 }
 
 TEST(BlasTest, Pow) {
   Storage a({3, 3, 3}, 3);
 
   std::vector<float> temp(27, 9);
-  std::unique_ptr<Storage> result(operator_pow(&a, 2));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+  Storage result({3, 3, 3});
+  operator_pow(&a, 2, &result);
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
 }
 
 TEST(BlasTest, Exp) {
   Storage a({3, 3, 3}, 2);
 
   std::vector<float> temp(27, exp(2));
-  std::unique_ptr<Storage> result(operator_exp(&a));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+  Storage result({3, 3, 3});
+  operator_exp(&a, &result);
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
 }
 
 TEST(BlasTest, Matmul) {
-  Storage a({2, 2, 3}, 1);
-  Storage b({2, 3, 2}, 1.5);
-  Storage c({2, 2, 2}, 1.5);
-  std::unique_ptr<Storage> result(operator_matmul(&a, &b));
-
-  std::vector<float> temp(8, 4.5);
-  std::vector<int> temp2({2, 2, 2});
-  ASSERT_TRUE(device_vector_equals_vector(result->shape, temp2));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
-  ASSERT_ANY_THROW(operator_matmul(&a, &c));
-
-  Storage d({2, 3, 3},
-            {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
-  std::vector<float> temp3{15,  18,  21,  42,  54,  66,  69,  90,  111,
-                           366, 396, 426, 474, 513, 552, 582, 630, 678};
-
-  std::unique_ptr<Storage> result2(operator_matmul(&d, &d));
-  ASSERT_TRUE(device_vector_equals_vector(result2->data, temp3));
-
+  // matrix
   Storage wt({3, 3}, {0, 3, 6, 1, 4, 7, 2, 5, 8});
   Storage o_grad({2, 3}, {0, 1, 2, 3, 4, 5});
-  std::unique_ptr<Storage> x_grad(operator_matmul(&o_grad, &wt));
-  ASSERT_TRUE(device_vector_equals_vector(x_grad->shape, {2, 3}));
+  Storage x_grad({2, 3});
+  operator_matmul(&o_grad, &wt, &x_grad);
+
   ASSERT_TRUE(
-      device_vector_equals_vector(x_grad->data, {5, 14, 23, 14, 50, 86}));
+      device_vector_equals_vector(x_grad.get_data(), {5, 14, 23, 14, 50, 86}));
+
+  // batch matrix
+  Storage a({2, 2, 3}, 1);
+  Storage b({2, 3, 2}, 1.5);
+
+  Storage result({2, 2, 2});
+  operator_matmul(&a, &b, &result);
+
+  std::vector<float> temp(8, 4.5);
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
+
+  // death
+  Storage c({2, 2, 2}, 1.5);
+  ASSERT_EXIT(operator_matmul(&a, &c, &result), ::testing::ExitedWithCode(1),
+              "error");
+
+  // broadcast
+  Storage c({3, 2}, 1.5);
+  operator_matmul(&a, &c, &result, 2);
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
+
+  Storage d({2, 3}, 1);
+  operator_matmul(&d, &b, &result, 1);
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
 }
 
 TEST(BlasTest, Transpose) {
-  Storage a({2, 3, 3},
+  Storage a({3, 2, 3},
             {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
-  std::unique_ptr<Storage> result(operator_transpose(&a, 0, 1));
+  Storage result({3, 3, 2});
+  operator_transpose(&a, &result);
 
-  std::vector<float> temp{0,  1,  2,  9, 10, 11, 3,  4,  5,
-                          12, 13, 14, 6, 7,  8,  15, 16, 17};
-  std::vector<int> temp2({3, 2, 3});
-  ASSERT_TRUE(device_vector_equals_vector(result->shape, temp2));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+  std::vector<float> temp{0,  3, 1,  4,  2,  5,  6,  9,  7,
+                          10, 8, 11, 12, 15, 13, 16, 14, 17};
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
 }
 
 TEST(BlasTest, Mean) {
   std::vector<float> tempp(
       {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
   Storage a({2, 3, 3}, tempp);
-  std::unique_ptr<Storage> result(operator_mean(&a, 0));
-  device_vector_cout(result->data);
+  Storage result({3, 3});
+  operator_mean(&a, 0, &result);
+  device_vector_cout(result.get_data());
 
   std::vector<float> temp({4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5});
-  std::vector<int> temp2({3, 3});
-  ASSERT_TRUE(device_vector_equals_vector(result->shape, temp2));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
 
   // corner case
   Storage b(std::vector<int>({1, 5}), {1, 2, 3, 4, 5});
-  std::unique_ptr<Storage> result2(operator_mean(&b, 1));
-  ASSERT_TRUE(device_vector_equals_vector(result2->shape, {1, 1}));
-  ASSERT_TRUE(device_vector_equals_vector(result2->data, {3}));
+  Storage result2({1, 1});
+  operator_mean(&b, 1, &result2);
+  ASSERT_TRUE(device_vector_equals_vector(result2.get_data(), {3}));
 }
 
 TEST(BlasTest, Sum) {
   std::vector<float> tempp(
       {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
   Storage a({2, 3, 3}, tempp);
-  std::unique_ptr<Storage> result(operator_sum(&a, 0));
+  Storage result({3, 3});
+  operator_sum(&a, 0, &result);
+  device_vector_cout(result.get_data());
 
-  std::vector<float> temp{9, 11, 13, 15, 17, 19, 21, 23, 25};
-  std::vector<int> temp2({3, 3});
-  ASSERT_TRUE(device_vector_equals_vector(result->shape, temp2));
-  ASSERT_TRUE(device_vector_equals_vector(result->data, temp));
+  std::vector<float> temp({9, 11, 13, 15, 17, 19, 21, 23, 25});
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
 
   // corner case
-  Storage b(std::vector<int>({5, 1}), {1, 2, 3, 4, 5});
-  std::unique_ptr<Storage> result2(operator_sum(&b, 0));
-  ASSERT_TRUE(device_vector_equals_vector(result2->shape, {1, 1}));
-  ASSERT_TRUE(device_vector_equals_vector(result2->data, {15}));
+  Storage b(std::vector<int>({1, 5}), {1, 2, 3, 4, 5});
+  Storage result2({1, 1});
+  operator_sum(&b, 1, &result2);
+  ASSERT_TRUE(device_vector_equals_vector(result2.get_data(), {15}));
 }

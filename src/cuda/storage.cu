@@ -87,10 +87,10 @@ void Storage::xavier(size_t in_size, size_t out_size) {
 }
 
 void Storage::check_size() {
-  CHECK_EQ(true, this->shape.size() >= 2, "Storage: error, shape.size() < 2");
+  CHECK_EQ(true, this->shape.size() >= 2, "Storage: shape error, shape.size() < 2");
   int size = 1;
   for (int i = 0; i < this->shape.size(); i++) {
     size *= this->shape[i];
   }
-  CHECK_EQ(size, this->data.size(), "Storage: error size");
+  CHECK_EQ(size, this->data.size(), "Storage: size error");
 }

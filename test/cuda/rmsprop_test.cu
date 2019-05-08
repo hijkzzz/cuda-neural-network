@@ -11,10 +11,10 @@ TEST(RMSProp, Update) {
 
   for (int i = 1; i <= 100; i++) {
     rmsprop_update(&square_grads, &weights, &grads, 0.01);
-    if (i % 10 == 0) {
+    if (i % 20 == 0) {
       std::cout << "update grads with L2:" << i << std::endl;
-      device_vector_cout(square_grads.data);
-      device_vector_cout(weights.data);
+      device_vector_cout(square_grads.get_data());
+      device_vector_cout(weights.get_data());
     }
   }
 }
@@ -27,10 +27,10 @@ TEST(RMSProp, UpdateWithL2) {
 
   for (int i = 1; i <= 100; i++) {
     rmsprop_update(&square_grads, &weights, &grads, 0.01, 0.001);
-    if (i % 10 == 0) {
+    if (i % 20 == 0) {
       std::cout << "update grads with L2:" << i << std::endl;
-      device_vector_cout(square_grads.data);
-      device_vector_cout(weights.data);
+      device_vector_cout(square_grads.get_data());
+      device_vector_cout(weights.get_data());
     }
   }
 }

@@ -11,7 +11,7 @@
 void operator_add(const Storage *input1, const Storage *input2,
                   Storage *outputs) {
   CHECK_EQ(input1->get_data().size(), input2->get_data().size(),
-           "operator_add: error size");
+           "operator_add: size error");
 
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
                     input2->get_data().begin(), outputs->get_data().begin(),
@@ -33,7 +33,7 @@ void operator_add(const Storage *input1, float value, Storage *outputs) {
 void operator_sub(const Storage *input1, const Storage *input2,
                   Storage *outputs) {
   CHECK_EQ(input1->get_data().size(), input2->get_data().size(),
-           "operator_sub: error size");
+           "operator_sub: size error");
 
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
                     input2->get_data().begin(), outputs->get_data().begin(),
@@ -43,7 +43,7 @@ void operator_sub(const Storage *input1, const Storage *input2,
 void operator_mul(const Storage *input1, const Storage *input2,
                   Storage *outputs) {
   CHECK_EQ(input1->get_data().size(), input2->get_data().size(),
-           "operator_mul: error size");
+           "operator_mul: size error");
 
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
                     input2->get_data().begin(), outputs->get_data().begin(),
@@ -65,7 +65,7 @@ void operator_mul(const Storage *input1, float value, Storage *outputs) {
 void operator_div(const Storage *input1, const Storage *input2,
                   Storage *outputs) {
   CHECK_EQ(input1->get_data().size(), input2->get_data().size(),
-           "operator_div: error size");
+           "operator_div: size error");
 
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
                     input2->get_data().begin(), outputs->get_data().begin(),
