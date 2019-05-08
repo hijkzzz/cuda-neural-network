@@ -3,24 +3,29 @@
 #include <algorithm>
 #include <fstream>
 
-DataSet::DataSet(std::string minist_data_path, bool shuffle) {
+DataSet::DataSet(std::string minist_data_path, bool shuffle)
+    : shuffle(shuffle) {
   // train data
   this->read_images(minist_data_path + "/train-images.idx3-ubyte",
                     this->train_data);
   this->read_labels(minist_data_path + "/train-labels.idx1-ubyte",
                     this->train_label);
-  this->train_data_index = 0;
-
-  // TODO: shuffle train data
-  if (shuffle) {
-  }
-
   // test data
   this->read_images(minist_data_path + "/t10k-images.idx3-ubyte",
                     this->test_data);
   this->read_labels(minist_data_path + "/t10k-labels.idx1-ubyte",
                     this->test_label);
+  // init
+  this->reset();
+}
+
+void DataSet::reset() {
+  this->train_data_index = 0;
   this->test_data_index = 0;
+
+  // TODO: shuffle train data
+  if (shuffle) {
+  }
 }
 
 std::pair<std::vector<std::vector<float>>, std::vector<unsigned char>>
@@ -28,14 +33,12 @@ DataSet::get_train_data(int batch_size) {
   int start = this->train_data_index;
   int end = std::min(this->train_data_index + batch_size,
                      (int)this->train_data.size());
-
-  std::vector<std::vector<float>> temp_data(this->train_data.begin() + start,
-                                            this->train_data.begin() + end);
-  std::vector<unsigned char> temp_label(this->train_label.begin() + start,
-                                        this->train_label.begin() + end);
-
   this->train_data_index = end;
-  return {temp_data, temp_label};
+
+  return {std::vector<std::vector<float>>(this->train_data.begin() + start,
+                                          this->train_data.begin() + end),
+          std::vector<unsigned char>(this->train_data.begin() + start,
+                                     this->train_data.begin() + end)};
 }
 
 std::pair<std::vector<std::vector<float>>, std::vector<unsigned char>>
@@ -43,14 +46,12 @@ DataSet::get_test_data(int batch_size) {
   int start = this->test_data_index;
   int end =
       std::min(this->test_data_index + batch_size, (int)this->test_data.size());
-
-  std::vector<std::vector<float>> temp_data(this->test_data.begin() + start,
-                                            this->test_data.begin() + end);
-  std::vector<unsigned char> temp_label(this->test_label.begin() + start,
-                                        this->test_label.begin() + end);
-
   this->test_data_index = end;
-  return {temp_data, temp_label};
+
+  return {std::vector<std::vector<float>>(this->test_data.begin() + start,
+                                          this->test_data.begin() + end),
+          std::vector<unsigned char>(this->test_label.begin() + start,
+                                     this->test_label.begin() + end)};
 }
 
 unsigned int DataSet::reverse_int(unsigned int i) {

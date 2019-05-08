@@ -14,7 +14,7 @@ void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
 
 class LogSoftmax : public Layer{
  public:
-  LogSoftmax(int dim = 1) : dim(dim) {}
+  explicit LogSoftmax(int dim = 1) : dim(dim) {}
   void forward();
   void backward();
 

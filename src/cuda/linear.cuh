@@ -21,7 +21,7 @@ void operator_d_linear_bias(const Storage *outputs_grad, Storage *bias_grad);
 
 class Linear : public Layer {
  public:
-  Linear(int in_size, int out_size, bool is_bias);
+ explicit Linear(int in_size, int out_size, bool is_bias);
 
   std::vector<std::pair<Storage *, Storage *>> parameters();
   void forward();

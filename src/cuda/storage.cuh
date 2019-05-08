@@ -8,9 +8,10 @@
 
 class Storage {
  public:
-  Storage(const std::vector<int> &_shape, float value = 0);
-  Storage(const std::vector<int> &_shape, const std::vector<float> &_data);
-  Storage(const std::vector<int> &_shape,
+  explicit Storage(const std::vector<int> &_shape);
+  explicit Storage(const std::vector<int> &_shape, float value);
+  explicit Storage(const std::vector<int> &_shape, const std::vector<float> &_data);
+  explicit Storage(const std::vector<int> &_shape,
           thrust::device_vector<float>::const_iterator begin,
           thrust::device_vector<float>::const_iterator end);
 

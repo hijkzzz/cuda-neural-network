@@ -33,7 +33,7 @@ void operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad);
 
 class Conv : public Layer {
  public:
-  Conv(int height, int width, int channel_in, int channel_out, int kernel_h,
+  explicit Conv(int height, int width, int channel_in, int channel_out, int kernel_h,
        int kernel_w, int pad_h, int pad_w, int stride_h, int stride_w,
        bool is_bias);
 

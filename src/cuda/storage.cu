@@ -6,6 +6,15 @@
 
 #include <cmath>
 
+Storage::Storage(const std::vector<int> &_shape) : shape(_shape) {
+  int size = 1;
+  for (int i = 0; i < _shape.size(); i++) {
+    size *= _shape[i];
+  }
+
+  this->data.resize(size);
+}
+
 Storage::Storage(const std::vector<int> &_shape, float value) : shape(_shape) {
   int size = 1;
   for (int i = 0; i < _shape.size(); i++) {
@@ -87,7 +96,8 @@ void Storage::xavier(size_t in_size, size_t out_size) {
 }
 
 void Storage::check_size() {
-  CHECK_EQ(true, this->shape.size() >= 2, "Storage: shape error, shape.size() < 2");
+  CHECK_EQ(true, this->shape.size() >= 2,
+           "Storage: shape error, shape.size() < 2");
   int size = 1;
   for (int i = 0; i < this->shape.size(); i++) {
     size *= this->shape[i];
