@@ -211,7 +211,7 @@ void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
   // col^T
   Storage cols_t(
       {batch_size, height_col * width_col, channel_in * kernel_h * kernel_w});
-  operator_transpose(cols, 1, 2, &cols_t);
+  operator_transpose(cols, &cols_t);
 
   // dL/dF = dL/dY * col^T
   Storage dl_df({batch_size, channel_out, channel_in * kernel_h * kernel_w});
@@ -222,7 +222,7 @@ void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
   filters->reshape(std::vector<int>{
       channel_out, channel_in * kernel_h * kernel_w});  // filters reshape
   Storage filters_t({channel_in * kernel_h * kernel_w, channel_out});
-  operator_transpose(filters, 0, 1, &filters_t);
+  operator_transpose(filters, &filters_t);
   filters->reshape(std::vector<int>{channel_out, channel_in, kernel_h,
                                     kernel_w});  // filters recover
 
@@ -284,11 +284,88 @@ void operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad) {
   operator_sum(&sum3, 2, bias_grad);
 }
 
-Conv::Conv(int channel_in, int channel_out, int kernel_h, int kernel_w,
-           int pad_h, int pad_w, int stride_h, int stride_w) {}
+Conv::Conv(int height, int width, int channel_in, int channel_out, int kernel_h,
+           int kernel_w, int pad_h, int pad_w, int stride_h, int stride_w,
+           bool is_bias)
+    : height(height),
+      width(width),
+      channel_in(channel_in),
+      channel_out(channel_out),
+      kernel_h(kernel_h),
+      kernel_w(kernel_w),
+      pad_h(pad_h),
+      pad_w(pad_w),
+      stride_h(stride_h),
+      stride_w(stride_w),
+      is_bias(is_bias) {
+  int height_out = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+  int width_out = (width + 2 * pad_w - kernel_w) / stride_w + 1;
 
-std::vector<std::pair<Storage *, Storage *>> Conv::parameters() {}
+  this->filters.reset(
+      new Storage({channel_out, channel_in, kernel_h, kernel_w}));
+  this->filters->xavier(channel_in * height * width,
+                        channel_out * height_out * width_out);
+  this->filters_grad.reset(
+      new Storage({channel_out, channel_in, kernel_h, kernel_w}));
 
-void Conv::forward() {}
+  if (is_bias) {
+    this->bias.reset(new Storage({1, channel_out}));
+    this->bias_grad.reset(new Storage({1, channel_out}));
+    this->bias->xavier(channel_in * height * width,
+                       channel_out * height_out * width_out);
+  }
+}
 
-void Conv::backward() {}
+std::vector<std::pair<Storage *, Storage *>> Conv::parameters() {
+  if (this->is_bias) {
+    return {std::make_pair(this->filters.get(), this->filters_grad.get()),
+            std::make_pair(this->bias.get(), this->bias_grad.get())};
+  } else {
+    return {std::make_pair(this->filters.get(), this->filters_grad.get())};
+  }
+}
+
+void Conv::forward() {
+  const Storage *input = this->pre->get_output();
+  int height_out = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+  int width_out = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+  std::vector<int> output_shape{input->get_shape()[0], this->channel_out,
+                                height_out, width_out};
+
+  if (this->output.get() == nullptr ||
+      this->output->get_shape() != output_shape) {
+    this->output.reset(new Storage(output_shape));
+    this->cols.reset(
+        new Storage({input->get_shape()[0], channel_in * kernel_h * kernel_w,
+                     height_out * width_out}));
+  }
+
+  operator_conv(input, this->filters.get(), this->cols.get(), pad_h, pad_w,
+                stride_h, stride_w, this->output.get());
+
+  if (this->bias) {
+    operator_conv_bias(this->output.get(), this->bias.get(),
+                       this->output.get());
+  }
+}
+
+void Conv::backward() {
+  const Storage *input = this->pre->get_output();
+  Storage *output_grad = this->next->get_grad();
+
+  int height_out = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+  int width_out = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+
+  if (this->grad.get() == nullptr ||
+      this->grad->get_shape() != input->get_shape()) {
+    this->grad.reset(new Storage(input->get_shape()));
+  }
+
+  if (this->bias) {
+    operator_d_conv_bias(output_grad, this->bias_grad.get());
+  }
+
+  operator_d_conv(output_grad, input, this->cols.get(), this->filters.get(),
+                  pad_h, pad_w, stride_h, stride_w, this->filters_grad.get(),
+                  this->grad.get());
+}

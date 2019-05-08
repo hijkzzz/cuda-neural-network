@@ -29,8 +29,7 @@ void operator_pow(const Storage *input1, float e, Storage *outputs);
 void operator_matmul(const Storage *input1, const Storage *input2,
                      Storage *outputs, int broadcast = 0);
 
-void operator_transpose(const Storage *input1, int dim0, int dim1,
-                        Storage *outputs);
+void operator_transpose(const Storage *input1, Storage *outputs);
 
 void operator_mean(const Storage *input1, int dim, Storage *outputs);
 

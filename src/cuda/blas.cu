@@ -112,15 +112,15 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
   __shared__ float shared_input1[TILE_SIZE][TILE_SIZE];
   __shared__ float shared_input2[TILE_SIZE][TILE_SIZE];
 
-  int batch_idx = blockIdx.x;
+  int batch_idx = blockIdx.z;
   if (!broadcast == 1) input1 += batch_idx * height * k;
   if (!broadcast == 2) input2 += batch_idx * k * width;
   output += batch_idx * height * width;
 
   int bx = blockIdx.y;
-  int by = blockIdx.z;
-  int tx = threadIdx.x;
-  int ty = threadIdx.y;
+  int by = blockIdx.x;
+  int tx = threadIdx.y;
+  int ty = threadIdx.x;
 
   int row = bx * TILE_SIZE + tx;
   int col = by * TILE_SIZE + ty;
@@ -165,55 +165,60 @@ void operator_matmul(const Storage *input1, const Storage *input2,
   float *output_ptr = thrust::raw_pointer_cast(outputs->get_data().data());
 
   dim3 dim_block(TILE_SIZE, TILE_SIZE);
-  dim3 dim_grid(batch_size, ceil((float)height / TILE_SIZE),
-                ceil((float)width / TILE_SIZE));
+  dim3 dim_grid(ceil((float)width / TILE_SIZE), ceil((float)height / TILE_SIZE),
+                batch_size);
   operator_matmul_h<<<dim_grid, dim_block>>>(input1_ptr, input2_ptr, output_ptr,
                                              height, k, width, broadcast);
 
   CUDA_POST_KERNEL_CHECK;
 }
 
-__global__ void operator_transpose_h(const float *input1, float *output,
-                                     const int *input1_shape, int input1_dims,
-                                     const int *output_shape, int dim0,
-                                     int dim1, int size, int *loc) {
-  int index = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void operator_transpose_h(float *in, float *out, int height,
+                                     int width) {
+  __shared__ float tile[TILE_SIZE][TILE_SIZE];
 
-  if (index < size) {
-    loc += index * input1_dims;
-    index2loc(index, output_shape, input1_dims, loc);
-    swap(loc[dim0], loc[dim1]);
-    int target_index = loc2index(loc, input1_shape, input1_dims);
+  int batch_idx = blockIdx.z;
+  in += batch_idx * height * width;
+  out += batch_idx * height * width;
 
-    output[index] = input1[target_index];
+  int bx = blockIdx.y;
+  int by = blockIdx.x;
+  int tx = threadIdx.y;
+  int ty = threadIdx.x;
+
+  int row = bx * TILE_SIZE + tx;
+  int col = by * TILE_SIZE + ty;
+
+  if (row < height && col < width) {
+    // coalesced read from global mem, TRANSPOSED write into shared mem:
+    tile[tx][ty] = in[row * width + col];
+  }
+  __syncthreads();
+
+  if (row < width && col < height) {
+    // read from shared mem, coalesced write to global mem
+    out[row * height + col] = tile[ty][tx];
   }
 }
 
-void operator_transpose(const Storage *input1, int dim0, int dim1,
-                        Storage *outputs) {
+void operator_transpose(const Storage *input1, Storage *outputs) {
+  int height = *(input1->get_shape().rbegin() + 1);
+  int width = *(input1->get_shape().rbegin());
+  int batch_size = 1;
+  for (auto iter = input1->get_shape().rbegin() + 2;
+       iter != input1->get_shape().rend(); iter++) {
+    batch_size *= *iter;
+  }
+
   // input
   const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
-  const int *input1_shape_ptr =
-      thrust::raw_pointer_cast(input1->get_shape().data());
-  int input_dims = input1->get_shape().size();
-
-  // output
-  thrust::device_vector<int> output_shape(input1->get_shape().begin(),
-                                          input1->get_shape().end());
-  swap(output_shape[dim0], output_shape[dim1]);
-  int *output_shape_ptr = thrust::raw_pointer_cast(output_shape.data());
   float *output_ptr = thrust::raw_pointer_cast(outputs->get_data().data());
 
-  int size = input1->get_data().size();
-  int grid_size = ceil((float)(size) / BLOCK_SIZE);
-
-  // loc buffer
-  thrust::device_vector<int> loc(size * input_dims);
-  int *loc_ptr = thrust::raw_pointer_cast(loc.data());
-
-  operator_transpose_h<<<grid_size, BLOCK_SIZE>>>(
-      input1_ptr, output_ptr, input1_shape_ptr, input_dims, output_shape_ptr,
-      dim0, dim1, size, loc_ptr);
+  dim3 dim_block(TILE_SIZE, TILE_SIZE);
+  dim3 dim_grid(ceil((float)width / TILE_SIZE), ceil((float)height / TILE_SIZE),
+                batch_size);
+  operator_transpose_h<<<dim_grid, dim_block>>>(input1_ptr, output_ptr, height,
+                                                width);
 
   CUDA_POST_KERNEL_CHECK;
 }

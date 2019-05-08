@@ -21,10 +21,9 @@ void operator_conv(const Storage *inputs, Storage *filters, Storage *cols,
                    const int pad_h, const int pad_w, const int stride_h,
                    const int stride_w, Storage *output);
 void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
-                     const Storage *cols, Storage *filters,
-                     const int pad_h, const int pad_w, const int stride_h,
-                     const int stride_w, Storage *filters_grad,
-                     Storage *inputs_grad);
+                     const Storage *cols, Storage *filters, const int pad_h,
+                     const int pad_w, const int stride_h, const int stride_w,
+                     Storage *filters_grad, Storage *inputs_grad);
 
 void operator_conv_bias(const Storage *inputs, const Storage *bias,
                         Storage *output);
@@ -34,8 +33,9 @@ void operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad);
 
 class Conv : public Layer {
  public:
-  Conv(int channel_in, int channel_out, int kernel_h, int kernel_w, int pad_h,
-       int pad_w, int stride_h, int stride_w);
+  Conv(int height, int width, int channel_in, int channel_out, int kernel_h,
+       int kernel_w, int pad_h, int pad_w, int stride_h, int stride_w,
+       bool is_bias);
 
   void forward();
   void backward();
@@ -48,6 +48,8 @@ class Conv : public Layer {
   std::unique_ptr<Storage> bias_grad;
   std::unique_ptr<Storage> cols;
 
+  int height;
+  int width;
   int channel_in;
   int channel_out;
   int kernel_h;
@@ -56,4 +58,5 @@ class Conv : public Layer {
   int pad_h;
   int stride_w;
   int stride_h;
+  bool is_bias;
 };
