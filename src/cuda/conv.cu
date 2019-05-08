@@ -216,7 +216,7 @@ void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
   // dL/dF = dL/dY * col^T
   Storage dl_df({batch_size, channel_out, channel_in * kernel_h * kernel_w});
   operator_matmul(outputs_grad, &cols_t, &dl_df);
-  operator_sum(&dl_df, 0, filters_grad);
+  operator_sum(&dl_df, 0, filters_grad); // reduce batch
 
   // F^T
   filters->reshape(std::vector<int>{
@@ -274,14 +274,21 @@ void operator_conv_bias(const Storage *inputs, const Storage *bias,
 }
 
 void operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad) {
-  // N*C*H*W ==> N*C
+  // N*C*H*W ==> 1*C
   int batch_size = outputs_grad->get_shape()[0];
   int channels = outputs_grad->get_shape()[1];
   int height = outputs_grad->get_shape()[2];
 
+  // reduce W
   Storage sum3({batch_size, channels, height});
   operator_sum(outputs_grad, 3, &sum3);
-  operator_sum(&sum3, 2, bias_grad);
+
+  // reduce H
+  Storage sum2({batch_size, channels});
+  operator_sum(&sum3, 2, &sum2);
+
+  // reduce N
+  operator_sum(&sum2, 0, bias_grad);
 }
 
 Conv::Conv(int height, int width, int channel_in, int channel_out, int kernel_h,

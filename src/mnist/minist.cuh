@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <iostream>
 #include <memory>
@@ -18,7 +18,7 @@
 
 class Minist {
  public:
-  Minist(DataSet* dataset);
+  explicit Minist(DataSet* dataset);
 
   void train(float learing_rate, float l2, int batch_size, int epochs,
              float beta);
@@ -43,15 +43,6 @@ class Minist {
   int correct_count(
       const std::vector<float>& predict_probs, int label_stride,
       const std::vector<unsigned char>& ground_truth);  // return correct count
-
-  std::unordered_map<std::string, std::unique_ptr<Storage>>
-      weights;  // Layer weights
-  std::unordered_map<std::string, std::unique_ptr<Storage>>
-      outputs;  // Layer outputs
-  std::unordered_map<std::string, std::unique_ptr<Storage>>
-      grads;  // Layer grads and Weight grads
-  std::unordered_map<std::string, std::unique_ptr<Storage>>
-      square_grads;  // for RMSProp
 
   DataSet* dataset;
 };

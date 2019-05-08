@@ -8,7 +8,7 @@
 
 class DataSet {
  public:
-  DataSet(std::string minist_data_path, bool shuffle = false);
+  explicit DataSet(std::string minist_data_path, bool shuffle = false);
 
   std::pair<std::vector<std::vector<float>>, std::vector<unsigned char>>
   get_train_data(int batch_size);

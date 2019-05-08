@@ -7,6 +7,7 @@
 #include <iostream>
 
 TEST(ConvTest, im2col) {
+  int batch_size = 1;
   int channel_in = 2;
   int width = 5;
   int height = 5;
@@ -23,23 +24,24 @@ TEST(ConvTest, im2col) {
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
 
-  Storage im({2, 5, 5}, {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
-                         13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-                         26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
-                         39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49});
-  std::vector<int> shape{channel_in * kernel_h * kernel_w,
-                         height_col * width_col};
-  Storage col(shape, 0);
-  const float *im_ptr = thrust::raw_pointer_cast(im.data.data());
-  float *col_ptr = thrust::raw_pointer_cast(col.data.data());
+  Storage im(
+      {batch_size, 2, 5, 5},
+      {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
+       17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+       34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49});
+  Storage col(
+      {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col});
+  const float *im_ptr = thrust::raw_pointer_cast(im.get_data().data());
+  float *col_ptr = thrust::raw_pointer_cast(col.get_data().data());
 
-  im2col(im_ptr, channel_in, height, width, kernel_h, kernel_w, pad_h, pad_w,
-         stride_h, stride_w, col_ptr);
+  im2col(im_ptr, batch_size, channel_in, height, width, kernel_h, kernel_w,
+         pad_h, pad_w, stride_h, stride_w, col_ptr);
   std::cout << "im2col" << std::endl;
-  device_vector_cout(col.data);
+  device_vector_cout(col.get_data());
 }
 
 TEST(ConvTest, col2im) {
+  int batch_size = 1;
   int channel_in = 2;
   int width = 5;
   int height = 5;
@@ -56,9 +58,9 @@ TEST(ConvTest, col2im) {
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
 
-  Storage im({2, 5, 5}, 0);
+  Storage im({batch_size, 2, 5, 5});
   Storage col(
-      {channel_in * kernel_h * kernel_w, height_col * width_col},
+      {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col},
       {0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  0,  5,  6,  7,  8,  0,  10, 11,
        12, 13, 0,  15, 16, 17, 18, 0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,
        6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0,  0,  0,  0,
@@ -84,13 +86,13 @@ TEST(ConvTest, col2im) {
        0,  0,  0,  0,  30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
        44, 45, 46, 47, 48, 49, 0,  0,  0,  0,  0,  31, 32, 33, 34, 0,  36, 37,
        38, 39, 0,  41, 42, 43, 44, 0,  46, 47, 48, 49, 0,  0,  0,  0,  0,  0});
-  float *im_ptr = thrust::raw_pointer_cast(im.data.data());
-  const float *col_ptr = thrust::raw_pointer_cast(col.data.data());
+  float *im_ptr = thrust::raw_pointer_cast(im.get_data().data());
+  const float *col_ptr = thrust::raw_pointer_cast(col.get_data().data());
 
-  col2im(col_ptr, channel_in, height, width, kernel_h, kernel_w, pad_h, pad_w,
-         stride_h, stride_w, im_ptr);
+  col2im(col_ptr, batch_size, channel_in, height, width, kernel_h, kernel_w,
+         pad_h, pad_w, stride_h, stride_w, im_ptr);
   std::cout << "col2im" << std::endl;
-  device_vector_cout(im.data);
+  device_vector_cout(im.get_data());
 }
 
 TEST(ConvTest, ConvForward) {
@@ -109,6 +111,9 @@ TEST(ConvTest, ConvForward) {
   int stride_h = 1;
   int stride_w = 1;
 
+  int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+  int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
+
   Storage input(
       {batch_size, channel_in, height, width},
       {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
@@ -123,22 +128,20 @@ TEST(ConvTest, ConvForward) {
                   0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8,
                   0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8});
 
-  Storage cols({1, 1, 1});
+  Storage cols(
+      {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col});
 
-  std::unique_ptr<Storage> output(
-      operator_conv(&input, &filter, &cols, pad_h, pad_w, stride_h, stride_h));
-  ASSERT_TRUE(device_vector_equals_vector(
-      output->shape, {batch_size, channel_out, height, width}));
+  Storage output({batch_size, channel_out, height_col, width_col});
+  operator_conv(&input, &filter, &cols, pad_h, pad_w, stride_h, stride_h,
+                &output);
+
+  std::cout << "im2col" << std::endl;
+  device_vector_cout(cols.get_data());
+
   std::cout << "conv" << std::endl;
-  device_vector_cout(output->data);
+  device_vector_cout(output.get_data());
   // test with scipy.signal.convolve2d(input, np.rot90(np.rot90(filter)),
   // "same")
-
-  ASSERT_TRUE(device_vector_equals_vector(
-      cols.shape,
-      {batch_size, channel_in * kernel_h * kernel_w, height * width}));
-  std::cout << "im2col" << std::endl;
-  device_vector_cout(cols.data);
 }
 
 TEST(ConvTest, ConvBackward) {
@@ -182,36 +185,28 @@ TEST(ConvTest, ConvBackward) {
   // im2col
   Storage cols(
       {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col});
-  const float *im_ptr = thrust::raw_pointer_cast(input.data.data());
-  float *col_ptr = thrust::raw_pointer_cast(cols.data.data());
+  const float *im_ptr = thrust::raw_pointer_cast(input.get_data().data());
+  float *col_ptr = thrust::raw_pointer_cast(cols.get_data().data());
 
-  im2col(im_ptr, channel_in, height, width, kernel_h, kernel_w, pad_h, pad_w,
-         stride_h, stride_w, col_ptr);
-  im2col(im_ptr + channel_in * height * width, channel_in, height, width,
-         kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w,
-         col_ptr + channel_in * kernel_h * kernel_w * height_col * width_col);
+  im2col(im_ptr, batch_size, channel_in, height, width, kernel_h, kernel_w,
+         pad_h, pad_w, stride_h, stride_w, col_ptr);
   std::cout << "im2col" << std::endl;
-  device_vector_cout(cols.data);
+  device_vector_cout(cols.get_data());
 
   // backward
-  Storage filters_grad({1, 1, 1});
-  std::unique_ptr<Storage> input_grad(
-      operator_d_conv(&output_grad, &input, &cols, &filter, pad_h, pad_w,
-                      stride_h, stride_w, &filters_grad));
+  Storage input_grad({batch_size, channel_in, height, width});
+  Storage filters_grad({channel_out, channel_in, kernel_h, kernel_w});
+  operator_d_conv(&output_grad, &input, &cols, &filter, pad_h, pad_w, stride_h,
+                  stride_w, &filters_grad, &input_grad);
 
-  ASSERT_TRUE(device_vector_equals_vector(
-      input_grad->shape, {batch_size, channel_in, height, width}));
   std::cout << "conv_d input" << std::endl;
-  device_vector_cout(input_grad->data);
+  device_vector_cout(input_grad.get_data());
   // Y = conv_2d(X, W)
   // dL/dX = conv_2d(dL/dY, rot180(W), "full")
   // test with scipy.signal.convolve2d(output_grad, filter, "full")
 
-  ASSERT_TRUE(device_vector_equals_vector(
-      filters_grad.shape,
-      {batch_size, channel_out, channel_in, kernel_h, kernel_w}));
-  std::cout << "conv_d weight" << std::endl;
-  device_vector_cout(filters_grad.data);
+  std::cout << "conv_d filters" << std::endl;
+  device_vector_cout(filters_grad.get_data());
   // dL/dW = conv_2d(X, dL/dY, "valid")
   // test with scipy.signal.convolve2d(input, np.rot90(np.rot90(output_grad),
   // "valid")
@@ -222,9 +217,10 @@ TEST(ConvTest, ConvBiasForward) {
                 {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
   Storage bias({1, 1, 2}, {1, 2});
 
-  std::unique_ptr<Storage> result(operator_conv_bias(&input, &bias));
+  Storage result({1, 2, 3, 3});
+  operator_conv_bias(&input, &bias, &result);
   ASSERT_TRUE(device_vector_equals_vector(
-      result->data,
+      result.get_data(),
       {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19}));
 }
 
@@ -233,11 +229,8 @@ TEST(ConvTest, ConvBiasBackward) {
       {2, 2, 3, 3},
       {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
-  Storage bias_grad({2, 3, 2});
 
-  std::unique_ptr<Storage> result(
-      operator_d_conv_bias(&output_grad, &bias_grad));
-
-  ASSERT_TRUE(device_vector_equals_vector(bias_grad.shape, {2, 2}));
-  ASSERT_TRUE(device_vector_equals_vector(bias_grad.data, {36, 117, 36, 117}));
+  Storage bias_grad({1, 2});
+  operator_d_conv_bias(&output_grad, &bias_grad);
+  ASSERT_TRUE(device_vector_equals_vector(bias_grad.get_data(), {36, 117}));
 }

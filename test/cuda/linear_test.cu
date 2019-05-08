@@ -14,29 +14,27 @@ TEST(LinearTest, WeightBackward) {
   Storage outputs_grad({2, 3}, {0, 1, 2, 3, 4, 5});
   Storage inputs({2, 3}, {0, 1, 2, 3, 4, 5});
   Storage weights({3, 3}, {0, 1, 2, 3, 4, 5, 6, 7, 8});
-  Storage weights_grad({1, 1, 1}, 1);
 
-  std::unique_ptr<Storage> inputs_grad(
-      operator_d_linear(&outputs_grad, &inputs, &weights, &weights_grad));
+  Storage weights_grad({3, 3});
+  Storage inputs_grad({2, 3});
+  operator_d_linear(&outputs_grad, &inputs, &weights, &weights_grad,
+                    &inputs_grad);
 
-  ASSERT_TRUE(device_vector_equals_vector(weights_grad.shape, {3, 3}));
-  ASSERT_TRUE(device_vector_equals_vector(weights_grad.data,
+  ASSERT_TRUE(device_vector_equals_vector(weights_grad.get_data(),
                                           {9, 12, 15, 12, 17, 22, 15, 22, 29}));
-
-  ASSERT_TRUE(device_vector_equals_vector(inputs_grad->shape, {2, 3}));
-  ASSERT_TRUE(
-      device_vector_equals_vector(inputs_grad->data, {5, 14, 23, 14, 50, 86}));
+  ASSERT_TRUE(device_vector_equals_vector(inputs_grad.get_data(),
+                                          {5, 14, 23, 14, 50, 86}));
 }
 
 TEST(LinearTest, BiasForward) {
   Storage bias({1, 3}, {0, 1, 2});
   Storage inputs({2, 3}, {0, 1, 2, 3, 4, 5});
 
-  std::unique_ptr<Storage> output(operator_bias(&inputs, &bias));
+  Storage output({2, 3});
+  operator_linear_bias(&inputs, &bias, &output);
 
-  ASSERT_TRUE(device_vector_equals_vector(output->shape, {2, 3}));
   ASSERT_TRUE(
-      device_vector_equals_vector(output->data, {0, 2, 4, 3, 5, 7}));
+      device_vector_equals_vector(output.get_data(), {0, 2, 4, 3, 5, 7}));
 }
 
 TEST(LinearTest, BiasBackward) {

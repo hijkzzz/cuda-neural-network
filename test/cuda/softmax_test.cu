@@ -6,66 +6,47 @@
 #include <thrust/copy.h>
 
 TEST(SoftMax, Forward) {
-  Storage X(std::vector<int>{3, 3}, {1, 2, 3, 1, 2, 3, 1, 2, 3});
-  std::unique_ptr<Storage> output(operator_log_softmax(&X, 1));
+  Storage X({3, 3}, {1, 2, 3, 1, 2, 3, 1, 2, 3});
+  Storage output({3, 3});
+  operator_log_softmax(&X, 1, &output);
 
-  ASSERT_TRUE(device_vector_equals_vector(output->shape, {3, 3}));
-  device_vector_cout(output->data);
+  device_vector_cout(output.get_data());
   // {-2.4076, -1.4076, -0.4076, -2.4076, -1.4076, -0.4076,
   //                   -2.4076, -1.4076, -0.4076}
 }
 
 TEST(SoftMax, Backward) {
-  Storage output_grad(std::vector<int>{3, 3},
-                      {0, 0, -1 / 3, -1 / 3, 0, 0, 0, -1 / 3, 0});
-  Storage input(std::vector<int>{3, 3},
-                {0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33});
+  Storage output_grad({3, 3}, {0, 0, -1 / 3, -1 / 3, 0, 0, 0, -1 / 3, 0});
+  Storage input({3, 3}, {0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33});
 
-  std::unique_ptr<Storage> input_grad(
-      operator_d_log_softmax(&output_grad, &input, 1));
-  ASSERT_TRUE(device_vector_equals_vector(input_grad->shape, {3, 3}));
-  device_vector_cout(input_grad->data);
+  Storage input_grad({3, 3});
+  operator_d_log_softmax(&output_grad, &input, 1, &input_grad);
+  device_vector_cout(input_grad.get_data());
 }
 
 TEST(SoftMax, SoftMaxLossForwardBackward1) {
   // case 1
-  Storage Y(std::vector<int>{3, 3}, {0, 0, 1, 0, 1, 0, 1, 0, 0});
-  Storage X(std::vector<int>{3, 3},
-            {0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33});
+  Storage Y({3, 3}, {0, 0, 1, 0, 1, 0, 1, 0, 0});
+  Storage X({3, 3}, {0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33});
 
-  std::unique_ptr<Storage> logp(operator_log_softmax(&X, 1));
-  std::unique_ptr<Storage> nll_loss(operator_nll_loss(logp.get(), &Y));
-  device_vector_cout(nll_loss->data);
+  // forward
+  Storage logp({3, 3});
+  operator_log_softmax(&X, 1, &logp);
+  Storage nll_loss({1, 1});
+  operator_nll_loss(&logp, &Y, &nll_loss);
+  device_vector_cout(nll_loss.get_data());
 
-  std::unique_ptr<Storage> nll_grad(operator_d_nll_loss(&Y));
-  device_vector_cout(nll_grad->data);
-  std::unique_ptr<Storage> softmax_grad(
-      operator_d_log_softmax(nll_grad.get(), &X, 1));
+  // backward
+  Storage nll_grad({3, 3});
+  operator_d_nll_loss(&Y, &nll_grad);
+  device_vector_cout(nll_grad.get_data());
 
-  ASSERT_TRUE(device_vector_equals_vector(softmax_grad->shape, {3, 3}));
-  device_vector_cout(softmax_grad->data);
+  Storage softmax_grad({3, 3});
+  operator_d_log_softmax(&nll_grad, &X, 1, &softmax_grad);
+  device_vector_cout(softmax_grad.get_data());
 
   // test with dL/dX = softmax(X) - dL/dY
   // tensor([[ 0.3333,  0.3333, -0.6667],
   //       [-0.6667,  0.3333, -0.6667],
   //       [-0.6667,  0.3333,  0.3333]])
-}
-
-TEST(SoftMax, SoftMaxLossForwardBackward2) {
-  // case 2
-  Storage Y(std::vector<int>{3, 3}, {0, 0, 1, 0, 1, 0, 1, 0, 0});
-  Storage X(std::vector<int>{3, 3}, {0, 0, 999999, 0, 999999, 0, 999999, 0, 0});
-
-  std::unique_ptr<Storage> logp(operator_log_softmax(&X, 1));
-  std::unique_ptr<Storage> nll_loss(operator_nll_loss(logp.get(), &Y));
-  device_vector_cout(nll_loss->data);
-
-  std::unique_ptr<Storage> nll_grad(operator_d_nll_loss(&Y));
-  std::unique_ptr<Storage> softmax_grad(
-      operator_d_log_softmax(nll_grad.get(), &X, 1));
-
-  ASSERT_TRUE(device_vector_equals_vector(softmax_grad->shape, {3, 3}));
-  device_vector_cout(softmax_grad->data);
-
-  // test with dL/dX = softmax(X) - Y
 }
