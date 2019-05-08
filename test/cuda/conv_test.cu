@@ -232,5 +232,5 @@ TEST(ConvTest, ConvBiasBackward) {
 
   Storage bias_grad({1, 2});
   operator_d_conv_bias(&output_grad, &bias_grad);
-  ASSERT_TRUE(device_vector_equals_vector(bias_grad.get_data(), {36, 117}));
+  ASSERT_TRUE(device_vector_equals_vector(bias_grad.get_data(), {72, 234}));
 }

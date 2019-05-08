@@ -2,10 +2,10 @@
 #include <utils.cuh>
 
 #include <cuda_runtime.h>
-#include <device_functions.h>
 #include <thrust/functional.h>
 #include <thrust/transform.h>
 
+#include <algorithm>
 #include <cfloat>
 
 void operator_add(const Storage *input1, const Storage *input2,
@@ -154,12 +154,17 @@ void operator_matmul(const Storage *input1, const Storage *input2,
   CHECK_EQ(k, *(input2->get_shape().rbegin() + 1),
            "operator_matmul: shape error");
 
+  // batch size
+  std::vector<int> base_shape =
+      input1->get_shape().size() > input2->get_shape().size()
+          ? input1->get_shape()
+          : input2->get_shape();
   int batch_size = 1;
-  for (auto i = input1->get_shape().rbegin() + 2;
-       i != input1->get_shape().rend(); i++) {
+  for (auto i = base_shape.rbegin() + 2; i != base_shape.rend(); i++) {
     batch_size *= *i;
   }
 
+  // pointer
   const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
   const float *input2_ptr = thrust::raw_pointer_cast(input2->get_data().data());
   float *output_ptr = thrust::raw_pointer_cast(outputs->get_data().data());
@@ -173,7 +178,7 @@ void operator_matmul(const Storage *input1, const Storage *input2,
   CUDA_POST_KERNEL_CHECK;
 }
 
-__global__ void operator_transpose_h(float *in, float *out, int height,
+__global__ void operator_transpose_h(const float *in, float *out, int height,
                                      int width) {
   __shared__ float tile[TILE_SIZE][TILE_SIZE];
 
@@ -226,20 +231,23 @@ void operator_transpose(const Storage *input1, Storage *outputs) {
 __global__ void operator_mean_h(const float *input1, float *output,
                                 const int *input1_shape, int input1_dims,
                                 const int *temp_shape, int dim, int dim_stride,
-                                int size, int *loc) {
+                                int size) {
+  extern __shared__ int shared[];
+
   int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
-    int length = input1_shape[dim];
+    int *loc = (int *)shared + threadIdx.x * input1_dims;
 
-    loc += index * input1_dims;
     index2loc(index, temp_shape, input1_dims - 1, loc);
     for (int i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
     }
     loc[dim] = 0;
+
     int base = loc2index(loc, input1_shape, input1_dims);
 
+    int length = input1_shape[dim];
     double total = 0;
     for (int i = 0; i < length; i++) {
       total += input1[base + i * dim_stride];
@@ -252,8 +260,8 @@ __global__ void operator_mean_h(const float *input1, float *output,
 void operator_mean(const Storage *input1, int dim, Storage *outputs) {
   // input
   const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
-  const int *input1_shape_ptr =
-      thrust::raw_pointer_cast(input1->get_shape().data());
+  thrust::device_vector<int> input_shape(input1->get_shape());
+  const int *input1_shape_ptr = thrust::raw_pointer_cast(input_shape.data());
   int input1_dims = input1->get_shape().size();
 
   // output
@@ -270,14 +278,11 @@ void operator_mean(const Storage *input1, int dim, Storage *outputs) {
 
   int size = input1->get_data().size() / input1->get_shape()[dim];
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
+  int shared_memory_size = BLOCK_SIZE * input1_dims * sizeof(int);
 
-  // loc buffer
-  thrust::device_vector<int> loc(size * input1_dims);
-  int *loc_ptr = thrust::raw_pointer_cast(loc.data());
-
-  operator_mean_h<<<grid_size, BLOCK_SIZE>>>(
+  operator_mean_h<<<grid_size, BLOCK_SIZE, shared_memory_size>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
-      dim, dim_stride, size, loc);
+      dim, dim_stride, size);
 
   CUDA_POST_KERNEL_CHECK;
 }
@@ -285,13 +290,14 @@ void operator_mean(const Storage *input1, int dim, Storage *outputs) {
 __global__ void operator_sum_h(const float *input1, float *output,
                                const int *input1_shape, int input1_dims,
                                const int *temp_shape, int dim, int dim_stride,
-                               int size, int *loc) {
+                               int size) {
+  extern __shared__ int shared[];
+
   int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
-    int length = input1_shape[dim];
+    int *loc = (int *)shared + threadIdx.x * input1_dims;
 
-    loc += index * input1_dims;
     index2loc(index, temp_shape, input1_dims - 1, loc);
     for (int i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
@@ -299,6 +305,7 @@ __global__ void operator_sum_h(const float *input1, float *output,
     loc[dim] = 0;
     int base = loc2index(loc, input1_shape, input1_dims);
 
+    int length = input1_shape[dim];
     double total = 0;
     for (int i = 0; i < length; i++) {
       total += input1[base + i * dim_stride];
@@ -311,8 +318,8 @@ __global__ void operator_sum_h(const float *input1, float *output,
 void operator_sum(const Storage *input1, int dim, Storage *outputs) {
   // input
   const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
-  const int *input1_shape_ptr =
-      thrust::raw_pointer_cast(input1->get_shape().data());
+  thrust::device_vector<int> input_shape(input1->get_shape());
+  const int *input1_shape_ptr = thrust::raw_pointer_cast(input_shape.data());
   int input1_dims = input1->get_shape().size();
 
   // output
@@ -329,14 +336,11 @@ void operator_sum(const Storage *input1, int dim, Storage *outputs) {
 
   int size = input1->get_data().size() / input1->get_shape()[dim];
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
+  int shared_memory_size = BLOCK_SIZE * input1_dims * sizeof(int);
 
-  // loc buffer
-  thrust::device_vector<int> loc(size * input1_dims);
-  int *loc_ptr = thrust::raw_pointer_cast(loc.data());
-
-  operator_sum_h<<<grid_size, BLOCK_SIZE>>>(
+  operator_sum_h<<<grid_size, BLOCK_SIZE, shared_memory_size>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
-      dim, dim_stride, size, loc);
+      dim, dim_stride, size);
 
   CUDA_POST_KERNEL_CHECK;
 }

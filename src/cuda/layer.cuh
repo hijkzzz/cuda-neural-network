@@ -7,7 +7,7 @@
 
 class Layer {
  public:
-  Layer();
+  Layer() {}
   Layer(const Layer &other) = delete;
   Layer(Layer &&other) = delete;
   Layer &operator=(const Layer &other) = delete;

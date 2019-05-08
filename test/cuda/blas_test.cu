@@ -94,8 +94,8 @@ TEST(BlasTest, Matmul) {
   ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
 
   // death
-  Storage c({2, 2, 2}, 1.5);
-  ASSERT_EXIT(operator_matmul(&a, &c, &result), ::testing::ExitedWithCode(1),
+  Storage k({2, 2, 2}, 1.5);
+  ASSERT_EXIT(operator_matmul(&a, &k, &result), ::testing::ExitedWithCode(1),
               "error");
 
   // broadcast

@@ -88,9 +88,9 @@ void Storage::xavier(size_t in_size, size_t out_size) {
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
 
   thrust::device_vector<curandState> cs(size);
-  curandState *cs = thrust::raw_pointer_cast(cs.data());
+  curandState *cs_ptr = thrust::raw_pointer_cast(cs.data());
   float scale = std::sqrt((float)6) / std::sqrt((float)(in_size) + out_size);
-  storage_xavier<<<grid_size, BLOCK_SIZE>>>(a_ptr, size, scale, cs);
+  storage_xavier<<<grid_size, BLOCK_SIZE>>>(a_ptr, size, scale, cs_ptr);
 
   CUDA_POST_KERNEL_CHECK;
 }

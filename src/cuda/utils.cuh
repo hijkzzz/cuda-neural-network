@@ -28,16 +28,27 @@
 
 #define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
 
-template <class T>
-void stl_clear_object(T *obj) {
-  T tmp;
-  tmp.swap(*obj);
-  // Sometimes "T tmp" allocates objects with memory (arena implementation?).
-  // Hence using additional reserve(0) even if it doesn't always work.
-  obj->reserve(0);
+inline __host__ __device__ void index2loc(int index, const int *shape, int dims,
+                                          int *loc) {
+  for (int i = dims - 1; i >= 0; i--) {
+    loc[i] = index % shape[i];
+    index /= shape[i];
+  }
 }
 
-__host__ __device__ void index2loc(int index, const int *shape, int dims,
-                                   int *loc);
-__host__ __device__ int loc2index(const int *loc, const int *shape, int dims);
-__host__ __device__ void swap(int &a, int &b);
+inline __host__ __device__ int loc2index(const int *loc, const int *shape,
+                                         int dims) {
+  int index = 0;
+  int base = 1;
+  for (int i = dims - 1; i >= 0; i--) {
+    index += base * loc[i];
+    base *= shape[i];
+  }
+  return index;
+}
+
+inline __host__ __device__ void swap(int &a, int &b) {
+  int temp = a;
+  a = b;
+  b = temp;
+}

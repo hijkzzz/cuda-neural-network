@@ -37,8 +37,8 @@ __global__ void operator_log_softmax_h(const float *input1, float *output,
 void operator_log_softmax(const Storage *input1, int dim, Storage *outputs) {
   // input
   const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
-  const int *input1_shape_ptr =
-      thrust::raw_pointer_cast(input1->get_shape().data());
+  thrust::device_vector<int> input_shape(input1->get_shape());
+  const int *input1_shape_ptr = thrust::raw_pointer_cast(input_shape.data());
   float *output_ptr = thrust::raw_pointer_cast(outputs->get_data().data());
 
   thrust::device_vector<int> temp_shape(input1->get_shape());
@@ -56,13 +56,14 @@ void operator_log_softmax(const Storage *input1, int dim, Storage *outputs) {
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
 
   // loc buffer
-  thrust::device_vector<int> loc(size * input1_dims);
-  int *loc_ptr = thrust::raw_pointer_cast(loc.data());
+  int *loc_ptr = nullptr;
+  cudaMalloc(&loc_ptr, size * input1_dims * sizeof(int));
 
   operator_log_softmax_h<<<grid_size, BLOCK_SIZE>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
       dim, dim_stride, size, loc_ptr);
 
+  cudaFree(loc_ptr);
   CUDA_POST_KERNEL_CHECK;
 }
 
@@ -116,8 +117,8 @@ __global__ void operator_d_log_softmax_h(const float *output_grads,
 void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
                             int dim, Storage *inputs_grad) {
   const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
-  const int *input1_shape_ptr =
-      thrust::raw_pointer_cast(input1->get_shape().data());
+  thrust::device_vector<int> input_shape(input1->get_shape());
+  const int *input1_shape_ptr = thrust::raw_pointer_cast(input_shape.data());
   const float *output_grads_ptr =
       thrust::raw_pointer_cast(output_grads->get_data().data());
   float *input1_grads_ptr =
@@ -137,13 +138,14 @@ void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
 
   // loc buffer
-  thrust::device_vector<int> loc(size * input1_dims);
-  int *loc_ptr = thrust::raw_pointer_cast(loc.data());
+  int *loc_ptr = nullptr;
+  cudaMalloc(&loc_ptr, size * input1_dims * sizeof(int));
 
   operator_d_log_softmax_h<<<grid_size, BLOCK_SIZE>>>(
       output_grads_ptr, input1_ptr, input1_shape_ptr, temp_shape_ptr,
       input1_dims, dim, dim_stride, size, input1_grads_ptr, loc_ptr);
 
+  cudaFree(loc_ptr);
   CUDA_POST_KERNEL_CHECK;
 }
 
