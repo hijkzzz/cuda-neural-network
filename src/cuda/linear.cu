@@ -58,7 +58,7 @@ Linear::Linear(int in_size, int out_size, bool is_bias)
 
   if (this->is_bias) {
     this->bias.reset(new Storage({1, out_size}));
-    this->bias_grad.reset(new Storage({in_size, out_size}));
+    this->bias_grad.reset(new Storage({1, out_size}));
     this->bias->xavier(in_size, out_size);
   }
 }

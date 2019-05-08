@@ -78,7 +78,7 @@ void RMSProp::regist(std::vector<std::pair<Storage *, Storage *>> params) {
     this->parameter_list.push_back(iter->first);
     this->grad_list.push_back(iter->second);
     this->square_grad.emplace_back(std::make_unique<Storage>(
-        iter->second->get_shape(), SQUARE_GRDAD_DEFALUT));
+        iter->first->get_shape(), SQUARE_GRDAD_DEFALUT));
   }
 }
 

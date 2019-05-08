@@ -41,12 +41,12 @@ void ReLU::forward() {
 }
 
 void ReLU::backward() {
-  const Storage *output_grad = this->next->get_output();
   const Storage *input = this->pre->get_output();
+  const Storage *output_grad = this->next->get_grad();
 
   if (this->grad.get() == nullptr ||
-      this->grad->get_shape() != output_grad->get_shape()) {
-    this->grad.reset(new Storage(output_grad->get_shape()));
+      this->grad->get_shape() != input->get_shape()) {
+    this->grad.reset(new Storage(input->get_shape()));
   }
   operator_d_relu(output_grad, input, this->grad.get());
 }

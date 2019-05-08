@@ -14,7 +14,7 @@ class ReShape : public Layer {
       this->output.reset(new Storage(out_shape));
     }
 
-    *this->output = *input;
+    this->output->get_data() = input->get_data();
   }
 
   void backward() {
@@ -25,7 +25,7 @@ class ReShape : public Layer {
       this->grad.reset(new Storage(in_shape));
     }
 
-    *this->grad = *output_grad;
+    this->grad->get_data() = output_grad->get_data();
   }
 
  private:
