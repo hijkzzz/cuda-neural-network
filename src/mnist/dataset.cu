@@ -1,7 +1,9 @@
-#include <dataset.cuh>
+﻿#include <dataset.cuh>
 
 #include <algorithm>
 #include <fstream>
+#include <random>
+#include <chrono>
 
 DataSet::DataSet(std::string mnist_data_path, bool shuffle) : shuffle(shuffle) {
   // train data
@@ -22,8 +24,14 @@ void DataSet::reset() {
   this->train_data_index = 0;
   this->test_data_index = 0;
 
-  // TODO: shuffle train data
   if (shuffle) {
+    // keep random seed same
+    unsigned seed = std::chrono::system_clock::now ().time_since_epoch ().count ();
+
+    std::shuffle(this->train_data.begin(), this->train_data.end(),
+                 std::default_random_engine(seed));
+    std::shuffle(this->train_label.begin(), this->train_label.end(),
+                 std::default_random_engine(seed));
   }
 }
 

@@ -8,7 +8,7 @@
 #define BETA 0.99
 
 int main() {
-  //DataSet dataset("../mnist_data");
+  //DataSet dataset("../mnist_data", true);
   //dataset.forward(64, true);
   //dataset.print_im();
 

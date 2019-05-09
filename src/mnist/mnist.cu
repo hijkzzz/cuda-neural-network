@@ -3,7 +3,7 @@
 Minist::Minist(std::string minst_data_path, float learning_rate, float l2,
                float beta) {
   // init
-  dataset.reset(new DataSet(minst_data_path));
+  dataset.reset(new DataSet(minst_data_path, true));
 
   conv1.reset(new Conv(28, 28, 1, 32, 5, 5, 0, 0, 1, 1, true));
   conv1_relu.reset(new ReLU(true));
