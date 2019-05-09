@@ -54,7 +54,6 @@ Minist::Minist(std::string minst_data_path, float learning_rate, float l2,
 
 void Minist::train(int epochs, int batch_size) {
   for (int epoch = 0; epoch < epochs; epoch++) {
-    dataset->reset();
     int idx = 1;
 
     while (dataset->has_next(true)) {
@@ -75,6 +74,7 @@ void Minist::train(int epochs, int batch_size) {
     }
 
     test(batch_size);
+    dataset->reset();
   }
 }
 

@@ -5,7 +5,8 @@
 #include <fstream>
 #include <random>
 
-DataSet::DataSet(std::string mnist_data_path, bool shuffle) : shuffle(shuffle) {
+DataSet::DataSet(std::string mnist_data_path, bool shuffle)
+    : shuffle(shuffle), train_data_index(0), test_data_index(0) {
   // train data
   this->read_images(mnist_data_path + "/train-images.idx3-ubyte",
                     this->train_data);
@@ -16,8 +17,6 @@ DataSet::DataSet(std::string mnist_data_path, bool shuffle) : shuffle(shuffle) {
                     this->test_data);
   this->read_labels(mnist_data_path + "/t10k-labels.idx1-ubyte",
                     this->test_label);
-  // init
-  this->reset();
 }
 
 void DataSet::reset() {
