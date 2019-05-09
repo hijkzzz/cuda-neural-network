@@ -38,5 +38,10 @@ TEST(LinearTest, BiasForward) {
 }
 
 TEST(LinearTest, BiasBackward) {
-  // duplicate
+  Storage outputs_grad({2, 3}, {0, 1, 2, 3, 4, 5});
+  Storage biad_grad({1, 3});
+
+  operator_d_linear_bias(&outputs_grad, &biad_grad);
+  ASSERT_TRUE(
+      device_vector_equals_vector(biad_grad.get_data(), {3, 5, 7}));
 }

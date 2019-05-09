@@ -192,12 +192,11 @@ __global__ void operator_transpose_h(const float *in, float *out, int height,
   if (row < height && col < width) {
     // coalesced read from global mem, TRANSPOSED write into shared mem:
     tile[tx][ty] = in[row * width + col];
-  }
-  __syncthreads();
 
-  if (row < width && col < height) {
+    __syncthreads();
+
     // read from shared mem, coalesced write to global mem
-    out[row * height + col] = tile[ty][tx];
+    out[col * height + row] = tile[tx][ty];
   }
 }
 

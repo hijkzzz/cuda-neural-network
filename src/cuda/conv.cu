@@ -186,11 +186,12 @@ void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
                      const int pad_w, const int stride_h, const int stride_w,
                      Storage *filters_grad, Storage *inputs_grad) {
   CHECK_EQ(outputs_grad->get_shape().size(), 4,
-           "operator_conv: outputs_grad shape error");
-  CHECK_EQ(inputs->get_shape().size(), 4, "operator_conv: inputs shape error");
-  CHECK_EQ(cols->get_shape().size(), 3, "operator_conv: cols shape error");
+           "operator_d_conv: outputs_grad shape error");
+  CHECK_EQ(inputs->get_shape().size(), 4,
+           "operator_d_conv: inputs shape error");
+  CHECK_EQ(cols->get_shape().size(), 3, "operator_d_conv: cols shape error");
   CHECK_EQ(filters->get_shape().size(), 4,
-           "operator_conv: filters shape error");
+           "operator_d_conv: filters shape error");
 
   int batch_size = *(inputs->get_shape().rbegin() + 3);
   int channel_in = *(inputs->get_shape().rbegin() + 2);
@@ -200,6 +201,9 @@ void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
   int channel_out = *(filters->get_shape().rbegin() + 3);
   int kernel_h = *(filters->get_shape().rbegin() + 1);
   int kernel_w = *(filters->get_shape().rbegin());
+
+  CHECK_EQ(*(filters->get_shape().rbegin() + 2), channel_in,
+           "operator_d_conv: channel size error");
 
   int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;

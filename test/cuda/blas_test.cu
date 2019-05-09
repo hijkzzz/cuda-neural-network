@@ -84,14 +84,14 @@ TEST(BlasTest, Matmul) {
       device_vector_equals_vector(x_grad.get_data(), {5, 14, 23, 14, 50, 86}));
 
   // batch matrix
-  Storage a({2, 2, 3}, 1);
-  Storage b({2, 3, 2}, 1.5);
+  Storage a({2, 2, 3}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
+  Storage b({2, 3, 2}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
 
   Storage result({2, 2, 2});
   operator_matmul(&a, &b, &result);
 
-  std::vector<float> temp(8, 4.5);
-  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
+  ASSERT_TRUE(device_vector_equals_vector(
+      result.get_data(), {10, 13, 28, 40, 172, 193, 244, 274}));
 
   // death
   Storage k({2, 2, 2}, 1.5);
@@ -99,13 +99,15 @@ TEST(BlasTest, Matmul) {
               "error");
 
   // broadcast
-  Storage c({3, 2}, 1.5);
+  Storage c({3, 2}, {0, 1, 2, 3, 4, 5});
   operator_matmul(&a, &c, &result, 2);
-  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
+  ASSERT_TRUE(device_vector_equals_vector(
+      result.get_data(), {10, 13, 28, 40, 46, 67, 64, 94}));
 
-  Storage d({2, 3}, 1);
+  Storage d({2, 3}, {0, 1, 2, 3, 4, 5});
   operator_matmul(&d, &b, &result, 1);
-  ASSERT_TRUE(device_vector_equals_vector(result.get_data(), temp));
+  ASSERT_TRUE(device_vector_equals_vector(result.get_data(),
+                                          {10, 13, 28, 40, 28, 31, 100, 112}));
 }
 
 TEST(BlasTest, Transpose) {

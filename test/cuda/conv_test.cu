@@ -96,7 +96,7 @@ TEST(ConvTest, col2im) {
 }
 
 TEST(ConvTest, ConvForward) {
-  int batch_size = 2;
+  int batch_size = 1;
   int channel_in = 2;
   int width = 5;
   int height = 5;
@@ -118,10 +118,7 @@ TEST(ConvTest, ConvForward) {
       {batch_size, channel_in, height, width},
       {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
        17, 18, 19, 20, 21, 22, 23, 24, 0,  1,  2,  3,  4,  5,  6,  7,  8,
-       9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 0,
-       1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17,
-       18, 19, 20, 21, 22, 23, 24, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-       10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+       9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
 
   Storage filter({channel_out, channel_in, kernel_h, kernel_w},
                  {0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8,
@@ -135,17 +132,21 @@ TEST(ConvTest, ConvForward) {
   operator_conv(&input, &filter, &cols, pad_h, pad_w, stride_h, stride_h,
                 &output);
 
-  std::cout << "im2col" << std::endl;
-  device_vector_cout(cols.get_data());
-
   std::cout << "conv" << std::endl;
-  device_vector_cout(output.get_data());
+  ASSERT_TRUE(device_vector_equals_vector(
+      output.get_data(),
+      {176,  284,  350,  416,  272,  420,  624, 696, 768, 480, 690,  984,  1056,
+       1128, 690,  960,  1344, 1416, 1488, 900, 464, 608, 638, 668,  368,  176,
+       284,  350,  416,  272,  420,  624,  696, 768, 480, 690, 984,  1056, 1128,
+       690,  960,  1344, 1416, 1488, 900,  464, 608, 638, 668, 368,  176,  284,
+       350,  416,  272,  420,  624,  696,  768, 480, 690, 984, 1056, 1128, 690,
+       960,  1344, 1416, 1488, 900,  464,  608, 638, 668, 368}));
   // test with scipy.signal.convolve2d(input, np.rot90(np.rot90(filter)),
   // "same")
 }
 
 TEST(ConvTest, ConvBackward) {
-  int batch_size = 2;
+  int batch_size = 1;
   int channel_in = 2;
   int width = 5;
   int height = 5;
@@ -167,15 +168,11 @@ TEST(ConvTest, ConvBackward) {
       {batch_size, channel_in, height, width},
       {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
        17, 18, 19, 20, 21, 22, 23, 24, 0,  1,  2,  3,  4,  5,  6,  7,  8,
-       9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 0,
-       1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17,
-       18, 19, 20, 21, 22, 23, 24, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-       10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+       9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
 
   Storage output_grad({batch_size, channel_out, height_col, width_col},
-                      {0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8,
-                       0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8,
-                       0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8});
+                      {0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4,
+                       5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8});
 
   Storage filter({channel_out, channel_in, kernel_h, kernel_w},
                  {0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8,
@@ -190,8 +187,6 @@ TEST(ConvTest, ConvBackward) {
 
   im2col(im_ptr, batch_size, channel_in, height, width, kernel_h, kernel_w,
          pad_h, pad_w, stride_h, stride_w, col_ptr);
-  std::cout << "im2col" << std::endl;
-  device_vector_cout(cols.get_data());
 
   // backward
   Storage input_grad({batch_size, channel_in, height, width});
@@ -200,15 +195,25 @@ TEST(ConvTest, ConvBackward) {
                   stride_w, &filters_grad, &input_grad);
 
   std::cout << "conv_d input" << std::endl;
-  device_vector_cout(input_grad.get_data());
+  ASSERT_TRUE(device_vector_equals_vector(
+      input_grad.get_data(),
+      {0,   0,   3,   12,  12,  0,   18,  60,  78,  60,  27,  108, 252,
+       252, 171, 108, 270, 492, 402, 240, 108, 252, 435, 336, 192, 0,
+       0,   3,   12,  12,  0,   18,  60,  78,  60,  27,  108, 252, 252,
+       171, 108, 270, 492, 402, 240, 108, 252, 435, 336, 192}));
   // Y = conv_2d(X, W)
   // dL/dX = conv_2d(dL/dY, rot180(W), "full")
   // test with scipy.signal.convolve2d(output_grad, filter, "full")
 
   std::cout << "conv_d filters" << std::endl;
-  device_vector_cout(filters_grad.get_data());
+  ASSERT_TRUE(device_vector_equals_vector(
+      filters_grad.get_data(),
+      {312, 348, 384, 492, 528, 564, 672, 708, 744, 312, 348, 384, 492, 528,
+       564, 672, 708, 744, 312, 348, 384, 492, 528, 564, 672, 708, 744, 312,
+       348, 384, 492, 528, 564, 672, 708, 744, 312, 348, 384, 492, 528, 564,
+       672, 708, 744, 312, 348, 384, 492, 528, 564, 672, 708, 744}));
   // dL/dW = conv_2d(X, dL/dY, "valid")
-  // test with scipy.signal.convolve2d(input, np.rot90(np.rot90(output_grad),
+  // test with scipy.signal.convolve2d(input, np.rot90(np.rot90(output_grad)),
   // "valid")
 }
 
