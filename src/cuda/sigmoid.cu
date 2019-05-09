@@ -14,9 +14,8 @@ struct sigmoid_d_functor {
 };
 
 void operator_sigmoid(const Storage *input1, Storage *output) {
-  sigmoid_functor f;
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
-                    output->get_data().begin(), f);
+                    output->get_data().begin(), sigmoid_functor());
 }
 
 // Y = sigmoid(X)
@@ -24,9 +23,8 @@ void operator_sigmoid(const Storage *input1, Storage *output) {
 void operator_d_sigmoid(const Storage *outputs_grad, const Storage *input1,
                         Storage *inputs_grad) {
   Storage d_sigmoid(input1->get_shape());
-  sigmoid_d_functor f;
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
-                    d_sigmoid.get_data().begin(), f);
+                    d_sigmoid.get_data().begin(), sigmoid_d_functor());
 
   operator_mul(&d_sigmoid, outputs_grad, inputs_grad);
 }

@@ -1,5 +1,5 @@
 #include <dataset.cuh>
-#include <minist.cuh>
+#include <mnist.cuh>
 
 #define BATCH_SIZE 64
 #define LEARNING_RATE 0.01
@@ -8,6 +8,6 @@
 #define BETA 0.99
 
 int main() {
-  Minist minist("../mnist_data");
-  minist.train(LEARNING_RATE, L2, BATCH_SIZE, EPOCHS, BETA);
+  Minist mnist("../mnist_data");
+  mnist.train(EPOCHS, BATCH_SIZE, LEARNING_RATE, L2, BETA);
 }

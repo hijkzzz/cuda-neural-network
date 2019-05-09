@@ -3,17 +3,16 @@
 #include <algorithm>
 #include <fstream>
 
-DataSet::DataSet(std::string minist_data_path, bool shuffle)
-    : shuffle(shuffle) {
+DataSet::DataSet(std::string mnist_data_path, bool shuffle) : shuffle(shuffle) {
   // train data
-  this->read_images(minist_data_path + "/train-images.idx3-ubyte",
+  this->read_images(mnist_data_path + "/train-images.idx3-ubyte",
                     this->train_data);
-  this->read_labels(minist_data_path + "/train-labels.idx1-ubyte",
+  this->read_labels(mnist_data_path + "/train-labels.idx1-ubyte",
                     this->train_label);
   // test data
-  this->read_images(minist_data_path + "/t10k-images.idx3-ubyte",
+  this->read_images(mnist_data_path + "/t10k-images.idx3-ubyte",
                     this->test_data);
-  this->read_labels(minist_data_path + "/t10k-labels.idx1-ubyte",
+  this->read_labels(mnist_data_path + "/t10k-labels.idx1-ubyte",
                     this->test_label);
   // init
   this->reset();
@@ -36,21 +35,30 @@ void DataSet::forward(int batch_size, bool is_train) {
     this->train_data_index = end;
     int size = end - start;
 
+    // init device memory
     std::vector<int> output_shape{size, 1, this->height, this->width};
     if (this->output.get() == nullptr ||
         this->output->get_shape() != output_shape) {
       this->output.reset(new Storage(output_shape));
-      this->ouput_label.reset(new Storage({size, 10}));
     }
+    this->ouput_label.reset(new Storage({size, 10}, 0));
 
-    int im_stride = 1 * this->height * this->width;
+    // copy to device memory
+    int im_stride = 1 * this->height, this->width;
     int one_hot_stride = 10;
+
+    std::vector<float> train_data_buffer();
+    train_data_buffer.reserve(size * im_stride);
+
     for (int i = start; i < end; i++) {
-      thrust::copy(this->train_data[i].begin(), this->train_data[i].end(),
-                   this->output->get_data().begin() + (i - start) * im_stride);
+      train_data_buffer.insert(train_data_buffer.end(),
+                               this->train_data[i].begin(),
+                               this->train_data[i].end());
       this->output_label
           ->get_data()[(i - start) * one_hot_stride + this->train_label[i]] = 1;
     }
+    thrust::copy(this->train_data_buffer.begin(), this->train_data_buffer.end(),
+                 this->output->get_data().begin());
 
   } else {
     int start = this->test_data_index;
@@ -58,21 +66,30 @@ void DataSet::forward(int batch_size, bool is_train) {
                        (int)this->test_data.size());
     this->test_data_index = end;
 
+    // init device memory
     std::vector<int> output_shape{size, 1, this->height, this->width};
     if (this->output.get() == nullptr ||
         this->output->get_shape() != output_shape) {
       this->output.reset(new Storage(output_shape));
-      this->ouput_label.reset(new Storage({size, 10}));
     }
+    this->ouput_label.reset(new Storage({size, 10}, 0));
 
-    int im_stride = 1 * this->height * this->width;
+    // copy to device memory
+    int im_stride = 1 * this->height, this->width;
     int one_hot_stride = 10;
+
+    std::vector<float> test_data_buffer();
+    test_data_buffer.reserve(size * im_stride);
+
     for (int i = start; i < end; i++) {
-      thrust::copy(this->test_data[i].begin(), this->test_data[i].end(),
-                   this->output->get_data().begin() + (i - start) * im_stride);
+      test_data_buffer.insert(test_data_buffer.end(),
+                              this->test_data[i].begin(),
+                              this->test_data[i].end());
       this->output_label
           ->get_data()[(i - start) * one_hot_stride + this->test_label[i]] = 1;
     }
+    thrust::copy(this->test_data_buffer.begin(), this->test_data_buffer.end(),
+                 this->output->get_data().begin());
   }
 }
 

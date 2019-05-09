@@ -29,8 +29,8 @@ class Layer {
     throw std::runtime_error("not implement error");
   };
 
-  Storage *get_grad() { return this->grad.get(); }
-  Storage *get_output() { return this->output.get(); }
+  virtual Storage *get_grad() { return this->grad.get(); }
+  virtual Storage *get_output() { return this->output.get(); }
 
  protected:
   Layer *pre;
