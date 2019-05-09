@@ -1,4 +1,4 @@
-# neural-network
+﻿# neural-network
 Convolutional Neural Network with CUDA
 
 ## Layers
@@ -36,7 +36,6 @@ cmake --build
 
 ## TODO
 * Use CUDA Streams
-* Allocate GPU memory at once
 
 ## References
 * [High Performance Convolutional Neural Networks for Document Processing](https://hal.inria.fr/file/index/docid/112631/filename/p1038112283956.pdf)

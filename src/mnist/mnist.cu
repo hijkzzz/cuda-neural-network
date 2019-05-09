@@ -1,4 +1,4 @@
-#include <mnist.cuh>
+﻿#include <mnist.cuh>
 
 Minist::Minist(std::string minst_data_path, float learning_rate, float l2,
                float beta) {
@@ -80,18 +80,24 @@ void Minist::train(int epochs, int batch_size) {
 
 void Minist::test(int batch_size) {
   int idx = 1;
+  int count = 0;
+  int total = 0;
 
   while (dataset->has_next(false)) {
     forward(batch_size, false);
     auto acc = top1_accuracy(this->log_softmax->get_output()->get_data(), 10,
                              this->dataset->get_label()->get_data());
-
     if (idx % 10 == 0)
       std::cout << "Batch: " << idx
                 << ", Test Accuracy: " << (float(acc.first) / acc.second)
                 << std::endl;
+
+    count += acc.first;
+    total += acc.second;
     ++idx;
   }
+
+  std::cout << "Total Accuracy: " << (float(count) / total) << std::endl;
 }
 
 void Minist::forward(int batch_size, bool is_train) {
