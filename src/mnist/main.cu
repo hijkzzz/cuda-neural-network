@@ -3,7 +3,7 @@
 
 #define BATCH_SIZE 64
 #define LEARNING_RATE 0.01
-#define L2 0
+#define L2 0.0001
 #define EPOCHS 10
 #define BETA 0.99
 

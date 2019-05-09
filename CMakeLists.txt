@@ -7,7 +7,7 @@ endif()
 
 # option
 option(MNIST "mnist demo" ON)
-option(UNIT_TEST "googletest" ON)
+option(UNIT_TEST "googletest" OFF)
 
 # find cuda
 find_package(CUDA)
