@@ -1,22 +1,23 @@
 #include <mnist.cuh>
 
-Minist::Minist(std::string minst_data_path) {
+Minist::Minist(std::string minst_data_path, float learning_rate, float l2,
+               float beta) {
   // init
   dataset.reset(new DataSet(minst_data_path));
 
-  conv1.reset(new Conv(28, 28, 1, 32, 5, 5, 0, 0, 1, 1, true));
+  conv1.reset(new Conv(28, 28, 1, 16, 5, 5, 0, 0, 1, 1, true));
   conv1_relu.reset(new ReLU(true));
   max_pool1.reset(new MaxPool(2, 2, 0, 0, 2, 2));
 
-  conv2.reset(new Conv(12, 12, 32, 64, 5, 5, 0, 0, 1, 1, true));
+  conv2.reset(new Conv(12, 12, 16, 32, 5, 5, 0, 0, 1, 1, true));
   conv2_relu.reset(new ReLU(true));
   max_pool2.reset(new MaxPool(2, 2, 0, 0, 2, 2));
 
-  conv3.reset(new Conv(4, 4, 64, 128, 3, 3, 0, 0, 1, 1, true));
+  conv3.reset(new Conv(4, 4, 32, 64, 3, 3, 0, 0, 1, 1, true));
   conv3_relu.reset(new ReLU(true));
 
   flatten.reset(new Flatten(true));
-  fc1.reset(new Linear(128 * 2 * 2, 128, true));
+  fc1.reset(new Linear(64 * 2 * 2, 128, true));
   fc1_relu.reset(new ReLU(true));
 
   fc2.reset(new Linear(128, 10, true));
@@ -26,24 +27,24 @@ Minist::Minist(std::string minst_data_path) {
   nll_loss.reset(new NLLLoss());
 
   // connect
-  dataset->connect(conv1)
-      .connect(conv1_relu)
-      .connect(max_pool1)
-      .connect(conv2)
-      .connect(conv2_relu)
-      .connect(max_pool2)
-      .connect(conv3)
-      .connect(conv3_relu)
-      .connect(flatten)
-      .connect(fc1)
-      .connect(fc1_relu)
-      .connect(fc2)
-      .connect(fc2_relu)
-      .connect(log_softmax)
-      .connect(nll_loss);
+  dataset->connect(*conv1)
+      .connect(*conv1_relu)
+      .connect(*max_pool1)
+      .connect(*conv2)
+      .connect(*conv2_relu)
+      .connect(*max_pool2)
+      .connect(*conv3)
+      .connect(*conv3_relu)
+      .connect(*flatten)
+      .connect(*fc1)
+      .connect(*fc1_relu)
+      .connect(*fc2)
+      .connect(*fc2_relu)
+      .connect(*log_softmax)
+      .connect(*nll_loss);
 
   // regist parameters
-  rmsprop.reset(new RMSProp());
+  rmsprop.reset(new RMSProp(learning_rate, l2, beta));
   rmsprop->regist(conv1->parameters());
   rmsprop->regist(conv2->parameters());
   rmsprop->regist(conv3->parameters());
@@ -63,9 +64,9 @@ void Minist::train(int epochs, int batch_size) {
 
       float loss = this->nll_loss->get_output()->get_data()[0];
       auto acc = top1_accuracy(this->log_softmax->get_output()->get_data(), 10,
-                               this->dataset->get_label());
+                               this->dataset->get_label()->get_data());
 
-      if (idx % 10)
+      if (idx % 10 == 0)
         std::cout << "Epoch: " << epoch << ", Batch: " << idx
                   << ", NLLLoss: " << loss
                   << ", Train Accuracy: " << (float(acc.first) / acc.second)
@@ -83,11 +84,12 @@ void Minist::test(int batch_size) {
   while (dataset->has_next(false)) {
     forward(batch_size, false);
     auto acc = top1_accuracy(this->log_softmax->get_output()->get_data(), 10,
-                             this->dataset->get_label());
+                             this->dataset->get_label()->get_data());
 
-    if (idx % 10)
-      std::cout "Batch: " << idx << ", Test Accuracy: "
-                          << (float(acc.first) / acc.second) << std::endl;
+    if (idx % 10 == 0)
+      std::cout << "Batch: " << idx
+                << ", Test Accuracy: " << (float(acc.first) / acc.second)
+                << std::endl;
     ++idx;
   }
 }
@@ -115,8 +117,7 @@ void Minist::forward(int batch_size, bool is_train) {
   fc2_relu->forward();
 
   log_softmax->forward();
-  if (is_train):
-    nll_loss->forward(labels);
+  if (is_train) nll_loss->forward(labels);
 }
 
 void Minist::backward() {
@@ -142,21 +143,29 @@ void Minist::backward() {
   conv1->backward();
 }
 
-std::pair<int, int> Minist::top1_accuracy(const std::vector<float>& probs,
-                                          int cls_size,
-                                          const std::vector<float>& labels) {
+std::pair<int, int> Minist::top1_accuracy(
+    const thrust ::device_vector<float>& probs, int cls_size,
+    const thrust ::device_vector<float>& labels) {
   int count = 0;
-  for (int i = 0; i < labels.size(); i++) {
+  int size = labels.size() / cls_size;
+  for (int i = 0; i < size; i++) {
     int max_pos = -1;
     float max_value = -FLT_MAX;
+    int max_pos2 = -1;
+    float max_value2 = -FLT_MAX;
+
     for (int j = 0; j < cls_size; j++) {
       int index = i * cls_size + j;
       if (probs[index] > max_value) {
         max_value = probs[index];
         max_pos = j;
       }
+      if (labels[index] > max_value2) {
+        max_value2 = labels[index];
+        max_pos2 = j;
+      }
     }
-    if (max_pos == (int)labels[i]) ++count;
+    if (max_pos == max_pos2) ++count;
   }
-  return {count, labels.size()};
+  return {count, size};
 }

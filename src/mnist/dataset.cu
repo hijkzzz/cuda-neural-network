@@ -41,13 +41,13 @@ void DataSet::forward(int batch_size, bool is_train) {
         this->output->get_shape() != output_shape) {
       this->output.reset(new Storage(output_shape));
     }
-    this->ouput_label.reset(new Storage({size, 10}, 0));
+    this->output_label.reset(new Storage({size, 10}, 0));
 
     // copy to device memory
-    int im_stride = 1 * this->height, this->width;
+    int im_stride = 1 * this->height * this->width;
     int one_hot_stride = 10;
 
-    std::vector<float> train_data_buffer();
+    std::vector<float> train_data_buffer;
     train_data_buffer.reserve(size * im_stride);
 
     for (int i = start; i < end; i++) {
@@ -57,7 +57,7 @@ void DataSet::forward(int batch_size, bool is_train) {
       this->output_label
           ->get_data()[(i - start) * one_hot_stride + this->train_label[i]] = 1;
     }
-    thrust::copy(this->train_data_buffer.begin(), this->train_data_buffer.end(),
+    thrust::copy(train_data_buffer.begin(), train_data_buffer.end(),
                  this->output->get_data().begin());
 
   } else {
@@ -65,6 +65,7 @@ void DataSet::forward(int batch_size, bool is_train) {
     int end = std::min(this->test_data_index + batch_size,
                        (int)this->test_data.size());
     this->test_data_index = end;
+    int size = end - start;
 
     // init device memory
     std::vector<int> output_shape{size, 1, this->height, this->width};
@@ -72,13 +73,13 @@ void DataSet::forward(int batch_size, bool is_train) {
         this->output->get_shape() != output_shape) {
       this->output.reset(new Storage(output_shape));
     }
-    this->ouput_label.reset(new Storage({size, 10}, 0));
+    this->output_label.reset(new Storage({size, 10}, 0));
 
     // copy to device memory
-    int im_stride = 1 * this->height, this->width;
+    int im_stride = 1 * this->height * this->width;
     int one_hot_stride = 10;
 
-    std::vector<float> test_data_buffer();
+    std::vector<float> test_data_buffer;
     test_data_buffer.reserve(size * im_stride);
 
     for (int i = start; i < end; i++) {
@@ -88,7 +89,7 @@ void DataSet::forward(int batch_size, bool is_train) {
       this->output_label
           ->get_data()[(i - start) * one_hot_stride + this->test_label[i]] = 1;
     }
-    thrust::copy(this->test_data_buffer.begin(), this->test_data_buffer.end(),
+    thrust::copy(test_data_buffer.begin(), test_data_buffer.end(),
                  this->output->get_data().begin());
   }
 }
@@ -101,14 +102,29 @@ bool DataSet::has_next(bool is_train) {
   }
 }
 
-void DataSet::print_im(const std::vector<float>& image, int height, int width,
-                       int label) {
-  std::cout << label << std::endl;
-  for (int i = 0; i < height; i++) {
-    for (int j = 0; j < width; j++) {
-      std::cout << (image[i * width + j] > 0 ? "* " : "  ");
+void DataSet::print_im() {
+  int size = this->output->get_shape()[0];
+  int im_stride = 1 * height * width;
+
+  for (int k = 0; k < size; k++) {
+    int max_pos = -1;
+    float max_value = -FLT_MAX;
+    for (int i = 0; i < 10; i++) {
+      float val = this->output_label->get_data()[k * 10 + i];
+      if (val > max_value) {
+        max_value = val;
+        max_pos = i;
+      }
     }
-    std::cout << std::endl;
+
+    std::cout << max_pos << std::endl;
+    auto& data = this->output->get_data();
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        std::cout << (data[k * im_stride + i * width + j] > 0 ? "* " : "  ");
+      }
+      std::cout << std::endl;
+    }
   }
 }
 

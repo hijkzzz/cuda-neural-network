@@ -6,7 +6,7 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 endif()
 
 # option
-option(MNIST "mnist demo" OFF)
+option(MNIST "mnist demo" ON)
 option(UNIT_TEST "googletest" ON)
 
 # find cuda

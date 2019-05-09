@@ -18,10 +18,9 @@ class DataSet : public Layer {
 
   int get_height() { return this->height; }
   int get_width() { return this->width; }
-  Storage* get_label() { return this->output_label.get() }
+  Storage* get_label() { return this->output_label.get(); }
 
-  void print_im(const std::vector<float>& image, int height, int width,
-                int label);
+  void print_im();
 
  private:
   unsigned int reverse_int(unsigned int i);  // big endian

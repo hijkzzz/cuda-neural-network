@@ -2,6 +2,7 @@
 
 #include <layer.cuh>
 #include <storage.cuh>
+#include <flatten.cuh>
 
 void Flatten::forward() {
   Storage *input = this->pre->get_output();

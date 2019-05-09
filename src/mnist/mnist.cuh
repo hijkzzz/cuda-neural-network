@@ -5,33 +5,33 @@
 #include <string>
 #include <unordered_map>
 
-#include <dataset.cuh>
 #include <blas.cuh>
 #include <conv.cuh>
+#include <dataset.cuh>
+#include <flatten.cuh>
 #include <linear.cuh>
 #include <max_pool.cuh>
 #include <nll_loss.cuh>
 #include <relu.cuh>
-#include <flatten.cuh>
 #include <rmsprop.cuh>
 #include <softmax.cuh>
 #include <storage.cuh>
 
 class Minist {
  public:
-  explicit Minist(std::string mnist_data_path);
+  explicit Minist(std::string mnist_data_path, float learning_rate, float l2,
+                  float beta);
 
-  void train(int epochs, int batch_size, float learing_rate, float l2,
-             float beta);
+  void train(int epochs, int batch_size);
   void test(int batch_size);
 
  private:
-  void forward();   // neural network forward
-  void backward();  // neural network backward
+  void forward(int batch_size, bool is_train);  // neural network forward
+  void backward();                              // neural network backward
 
   std::pair<int, int> top1_accuracy(
-      const std::vector<float>& probs, int cls_size,
-      const std::vector<float>& labels);  // top1_accuracy
+      const thrust ::device_vector<float>& probs, int cls_size,
+      const thrust ::device_vector<float>& labels);  // top1_accuracy
 
   // Conv1_5x5     1 * 32
   // MaxPool1_2x2

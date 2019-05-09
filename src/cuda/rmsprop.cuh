@@ -13,8 +13,13 @@ void rmsprop_update(Storage *square_grads, Storage *weights,
 #endif  // DEBUG
 
 class RMSProp : public Optimizer {
-  explicit RMSProp(float learning_rate = 0.01, float l2 = 0.001, float beta = 0.99)
-      : learning_rate(learning_rate), l2(l2), beta(beta) {}
+ public:
+  explicit RMSProp(float learning_rate = 0.01, float l2 = 0.001,
+                   float beta = 0.99)
+      : learning_rate(learning_rate), l2(l2), beta(beta) {
+    std::cout << "learning rate: " << learning_rate << ", l2:" << l2
+              << ", beta:" << beta << std::endl;
+  }
 
   void regist(std::vector<std::pair<Storage *, Storage *>> params);
   void step();
