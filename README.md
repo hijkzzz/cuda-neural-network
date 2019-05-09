@@ -32,7 +32,7 @@ cmake --build
 
 ## Performance
 * 1 epoch 95%
-* 10 epochs 99%
+* 10 epochs 98.5%
 
 ## TODO
 * Use CUDA Streams
