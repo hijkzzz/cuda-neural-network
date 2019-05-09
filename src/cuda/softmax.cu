@@ -1,4 +1,4 @@
-#include <softmax.cuh>
+﻿#include <softmax.cuh>
 
 __global__ void operator_log_softmax_h(const float *input1, float *output,
                                        const int *input1_shape, int input1_dims,
@@ -55,7 +55,7 @@ void operator_log_softmax(const Storage *input1, int dim, Storage *outputs) {
 
   int size = input1->get_data().size() / input1->get_shape()[dim];
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
-  int shared_memory_size = BLOCK_SIZE * input1_dims;
+  int shared_memory_size = BLOCK_SIZE * input1_dims * sizeof(int);
 
   operator_log_softmax_h<<<grid_size, BLOCK_SIZE, shared_memory_size>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
@@ -134,7 +134,7 @@ void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
 
   int size = input1->get_data().size() / input1->get_shape()[dim];
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
-  int shared_memory_size = BLOCK_SIZE * input1_dims;
+  int shared_memory_size = BLOCK_SIZE * input1_dims * sizeof(int);
 
   operator_d_log_softmax_h<<<grid_size, BLOCK_SIZE, shared_memory_size>>>(
       output_grads_ptr, input1_ptr, input1_shape_ptr, temp_shape_ptr,
