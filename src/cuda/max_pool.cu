@@ -48,10 +48,10 @@ void operator_max_pool(const Storage* inputs, Storage* mask, int kernel_h,
   CHECK_EQ(inputs->get_shape().size(), 4,
            "operator_max_pool: inputs shape error");
 
-  int width = *(inputs->get_shape().rbegin());
-  int height = *(inputs->get_shape().rbegin() + 1);
-  int channels = *(inputs->get_shape().rbegin() + 2);
   int batch_size = *(inputs->get_shape().rbegin() + 3);
+  int channels = *(inputs->get_shape().rbegin() + 2);
+  int height = *(inputs->get_shape().rbegin() + 1);
+  int width = *(inputs->get_shape().rbegin());
 
   int pooled_height = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int pooled_width = (width + 2 * pad_w - kernel_w) / stride_w + 1;
@@ -122,10 +122,10 @@ void operator_d_max_pool(const Storage* output_grads, const Storage* inputs,
   CHECK_EQ(mask->get_shape().size(), 4,
            "operator_d_max_pool: mask shape error");
 
-  int width = *(inputs->get_shape().rbegin());
-  int height = *(inputs->get_shape().rbegin() + 1);
-  int channels = *(inputs->get_shape().rbegin() + 2);
   int batch_size = *(inputs->get_shape().rbegin() + 3);
+  int channels = *(inputs->get_shape().rbegin() + 2);
+  int height = *(inputs->get_shape().rbegin() + 1);
+  int width = *(inputs->get_shape().rbegin());
 
   int pooled_height = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int pooled_width = (width + 2 * pad_w - kernel_w) / stride_w + 1;

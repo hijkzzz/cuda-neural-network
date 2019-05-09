@@ -39,7 +39,7 @@ struct update_functor {
   __host__ __device__ void operator()(Tuple t) {
     // weights -= learning_rate * grads / (sqrt(suaqre_grads) + 1e-10)
     thrust::get<0>(t) -=
-        a * thrust::get<1>(t) / (sqrtf(thrust::get<2>(t)) + 1e-10);
+        (a * thrust::get<1>(t) / (sqrtf(thrust::get<2>(t)) + 1e-10));
   }
 };
 

@@ -32,7 +32,7 @@ void Flatten::backward() {
   } else {
     if (this->grad.get() == nullptr ||
         this->grad->get_shape() != this->in_shape) {
-      this->grad.reset(new Storage(in_shape));
+      this->grad.reset(new Storage(this->in_shape));
     }
 
     this->grad->get_data() = output_grad->get_data();

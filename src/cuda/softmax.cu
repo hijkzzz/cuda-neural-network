@@ -3,13 +3,14 @@
 __global__ void operator_log_softmax_h(const float *input1, float *output,
                                        const int *input1_shape, int input1_dims,
                                        const int *temp_shape, int dim,
-                                       int dim_stride, int size, int *loc) {
+                                       int dim_stride, int size) {
+  extern __shared__ int shared[];
   int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
     int length = input1_shape[dim];
 
-    loc += index * input1_dims;
+    int *loc = (int *)shared + threadIdx.x * input1_dims;
     index2loc(index, temp_shape, input1_dims - 1, loc);
     for (int i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
@@ -49,21 +50,17 @@ void operator_log_softmax(const Storage *input1, int dim, Storage *outputs) {
   int input1_dims = input1->get_shape().size();
   int dim_stride = 1;
   for (int i = dim + 1; i < input1_dims; i++) {
-    dim_stride *= input1_shape_ptr[i];
+    dim_stride *= input1->get_shape()[i];
   }
 
   int size = input1->get_data().size() / input1->get_shape()[dim];
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
+  int shared_memory_size = BLOCK_SIZE * input1_dims;
 
-  // loc buffer
-  int *loc_ptr = nullptr;
-  cudaMalloc(&loc_ptr, size * input1_dims * sizeof(int));
-
-  operator_log_softmax_h<<<grid_size, BLOCK_SIZE>>>(
+  operator_log_softmax_h<<<grid_size, BLOCK_SIZE, shared_memory_size>>>(
       input1_ptr, output_ptr, input1_shape_ptr, input1_dims, temp_shape_ptr,
-      dim, dim_stride, size, loc_ptr);
+      dim, dim_stride, size);
 
-  cudaFree(loc_ptr);
   CUDA_POST_KERNEL_CHECK;
 }
 
@@ -72,13 +69,14 @@ __global__ void operator_d_log_softmax_h(const float *output_grads,
                                          const int *input1_shape,
                                          const int *temp_shape, int input1_dims,
                                          int dim, int dim_stride, int size,
-                                         float *input1_grads, int *loc) {
+                                         float *input1_grads) {
+  extern __shared__ int shared[];
   int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < size) {
     int length = input1_shape[dim];
 
-    loc += index * input1_dims;
+    int *loc = (int *)shared + threadIdx.x * input1_dims;
     index2loc(index, temp_shape, input1_dims - 1, loc);
     for (int i = input1_dims - 1; i > dim; i--) {
       loc[i] = loc[i - 1];
@@ -131,21 +129,17 @@ void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
   int input1_dims = input1->get_shape().size();
   int dim_stride = 1;
   for (int i = dim + 1; i < input1_dims; i++) {
-    dim_stride *= input1_shape_ptr[i];
+    dim_stride *= input1->get_shape()[i];
   }
 
   int size = input1->get_data().size() / input1->get_shape()[dim];
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
+  int shared_memory_size = BLOCK_SIZE * input1_dims;
 
-  // loc buffer
-  int *loc_ptr = nullptr;
-  cudaMalloc(&loc_ptr, size * input1_dims * sizeof(int));
-
-  operator_d_log_softmax_h<<<grid_size, BLOCK_SIZE>>>(
+  operator_d_log_softmax_h<<<grid_size, BLOCK_SIZE, shared_memory_size>>>(
       output_grads_ptr, input1_ptr, input1_shape_ptr, temp_shape_ptr,
-      input1_dims, dim, dim_stride, size, input1_grads_ptr, loc_ptr);
+      input1_dims, dim, dim_stride, size, input1_grads_ptr);
 
-  cudaFree(loc_ptr);
   CUDA_POST_KERNEL_CHECK;
 }
 

@@ -40,8 +40,9 @@ void operator_linear_bias(const Storage *inputs, const Storage *bias,
 
   int size = inputs->get_data().size();
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
+  int width = bias->get_data().size();
   operator_bias_h<<<grid_size, BLOCK_SIZE>>>(inputs_ptr, bias_ptr, output_ptr,
-                                             bias->get_data().size(), size);
+                                             width, size);
 
   CUDA_POST_KERNEL_CHECK;
 }

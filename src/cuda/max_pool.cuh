@@ -34,8 +34,8 @@ class MaxPool : public Layer {
   std::unique_ptr<Storage> mask;
   int kernel_h;
   int kernel_w;
-  int pad_w;
   int pad_h;
-  int stride_w;
+  int pad_w;
   int stride_h;
+  int stride_w;
 };

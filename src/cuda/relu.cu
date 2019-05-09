@@ -8,7 +8,7 @@ struct relu_functor {
 
 struct relu_d_functor {
   __host__ __device__ float operator()(const float &x, const float &y) const {
-    return (x > FLT_EPSILON ? 1 : 0) * y;
+    return x > FLT_EPSILON ? y : 0;
   }
 };
 

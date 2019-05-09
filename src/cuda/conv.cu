@@ -14,10 +14,10 @@ __global__ void im2col_h(const int n, const float *data_im, const int height,
                          const int stride_h, const int stride_w,
                          const int height_col, const int width_col,
                          float *data_col, int im_stride, int col_stride) {
-  int index = blockIdx.y * blockDim.x + threadIdx.x;
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < n) {
-    const int batch_idx = blockIdx.x;
+    const int batch_idx = blockIdx.y;
     data_im += batch_idx * im_stride;
     data_col += batch_idx * col_stride;
 
@@ -62,7 +62,7 @@ void im2col(const float *data_im, const int batch_size, const int channels,
 
   int im_stride = channels * height * width;
   int col_stride = channels * kernel_h * kernel_w * height_col * width_col;
-  dim3 dim_grid(batch_size, ceil((float)size / BLOCK_SIZE));
+  dim3 dim_grid(ceil((float)size / BLOCK_SIZE), batch_size);
   im2col_h<<<dim_grid, BLOCK_SIZE>>>(
       size, data_im, height, width, kernel_h, kernel_w, pad_h, pad_w, stride_h,
       stride_w, height_col, width_col, data_col, im_stride, col_stride);
@@ -77,10 +77,10 @@ __global__ void col2im_h(const int n, const float *data_col, const int height,
                          const int stride_w, const int height_col,
                          const int width_col, float *data_im,
                          const int im_stride, const int col_stride) {
-  int index = blockIdx.y * blockDim.x + threadIdx.x;
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index < n) {
-    const int batch_idx = blockIdx.x;
+    const int batch_idx = blockIdx.y;
     data_im += batch_idx * im_stride;
     data_col += batch_idx * col_stride;
 
@@ -125,7 +125,7 @@ void col2im(const float *data_col, const int batch_size, const int channels,
   // bottom dimension, and then in the kernel add up the top dimensions.
   int im_stride = channels * height * width;
   int col_stride = channels * kernel_h * kernel_w * height_col * width_col;
-  dim3 dim_grid(batch_size, ceil((float)size / BLOCK_SIZE));
+  dim3 dim_grid(ceil((float)size / BLOCK_SIZE), batch_size);
   col2im_h<<<dim_grid, BLOCK_SIZE>>>(size, data_col, height, width, channels,
                                      kernel_h, kernel_w, pad_h, pad_w, stride_h,
                                      stride_w, height_col, width_col, data_im,
@@ -167,15 +167,14 @@ void operator_conv(const Storage *inputs, Storage *filters, Storage *cols,
          pad_h, pad_w, stride_h, stride_w, cols_ptr);
 
   // Y = F * col
-  // [C_out*(C_in*k_h*k_w)] * [(C_in*k_h*k_w)*(height_col*width_col)] =
-  // [channel_out * (height_col * width_col)]
-  filters->reshape(
-      std::vector<int>{channel_out, channel_in * kernel_h * kernel_w});
-  operator_matmul(filters, cols, output, 1);  // broadcast
+  // [C_out*(C_in*k_h*k_w)] * [batch_size *
+  // (C_in*k_h*k_w)*(height_col*width_col)] = [batch_size * channel_out *
+  // (height_col * width_col)]
+  filters->reshape({channel_out, channel_in * kernel_h * kernel_w});
+  operator_matmul(filters, cols, output, 1);  // broadcast param 1
 
   // recover shapre
-  filters->reshape(
-      std::vector<int>{channel_out, channel_in, kernel_h, kernel_w});
+  filters->reshape({channel_out, channel_in, kernel_h, kernel_w});
 }
 
 // Y = F * col
@@ -211,24 +210,25 @@ void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
   // col^T
   Storage cols_t(
       {batch_size, height_col * width_col, channel_in * kernel_h * kernel_w});
-  operator_transpose(cols, &cols_t);
+  operator_transpose(cols, &cols_t);  // last two dims transpose
 
   // dL/dF = dL/dY * col^T
   Storage dl_df({batch_size, channel_out, channel_in * kernel_h * kernel_w});
-  operator_matmul(outputs_grad, &cols_t, &dl_df);
-  operator_sum(&dl_df, 0, filters_grad); // reduce batch
+  operator_matmul(outputs_grad, &cols_t, &dl_df);  // last two dims matmul
+  operator_sum(&dl_df, 0, filters_grad);           // sum along batch
 
   // F^T
-  filters->reshape(std::vector<int>{
-      channel_out, channel_in * kernel_h * kernel_w});  // filters reshape
+  filters->reshape(
+      {channel_out, channel_in * kernel_h * kernel_w});  // filters reshape
   Storage filters_t({channel_in * kernel_h * kernel_w, channel_out});
   operator_transpose(filters, &filters_t);
-  filters->reshape(std::vector<int>{channel_out, channel_in, kernel_h,
-                                    kernel_w});  // filters recover
+  filters->reshape(
+      {channel_out, channel_in, kernel_h, kernel_w});  // filters recover
 
   // dL/d_col = F^T * dL/dY
-  Storage dl_dcol(cols->get_shape());
-  operator_matmul(&filters_t, outputs_grad, &dl_dcol, 1);
+  Storage dl_dcol(
+      {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col});
+  operator_matmul(&filters_t, outputs_grad, &dl_dcol, 1);  // broadcast param 1
 
   // dL/dY recover
   outputs_grad->reshape({batch_size, channel_out, height_col, width_col});
@@ -261,14 +261,14 @@ void operator_conv_bias(const Storage *inputs, const Storage *bias,
   const float *bias_ptr = thrust::raw_pointer_cast(bias->get_data().data());
   float *output_ptr = thrust::raw_pointer_cast(output->get_data().data());
 
-  int channel_stride =
-      *(inputs->get_shape().rbegin()) * *(inputs->get_shape().rbegin() + 1);
+  int channel_in = *(inputs->get_shape().rbegin() + 2);
+  int height = *(inputs->get_shape().rbegin() + 1);
+  int width = *(inputs->get_shape().rbegin());
 
   int size = inputs->get_data().size();
   int grid_size = ceil((float)(size) / BLOCK_SIZE);
   operator_conv_bias_h<<<grid_size, BLOCK_SIZE>>>(
-      inputs_ptr, bias_ptr, output_ptr, bias->get_data().size(), channel_stride,
-      size);
+      inputs_ptr, bias_ptr, output_ptr, channel_in, height * width, size);
 
   CUDA_POST_KERNEL_CHECK;
 }

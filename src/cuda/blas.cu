@@ -25,9 +25,8 @@ struct add_functor {
 };
 
 void operator_add(const Storage *input1, float value, Storage *outputs) {
-  add_functor f(value);
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
-                    outputs->get_data().begin(), f);
+                    outputs->get_data().begin(), add_functor(value));
 }
 
 void operator_sub(const Storage *input1, const Storage *input2,
@@ -57,9 +56,8 @@ struct mul_functor {
 };
 
 void operator_mul(const Storage *input1, float value, Storage *outputs) {
-  mul_functor f(value);
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
-                    outputs->get_data().begin(), f);
+                    outputs->get_data().begin(), mul_functor(value));
 }
 
 void operator_div(const Storage *input1, const Storage *input2,
@@ -81,9 +79,8 @@ struct pow_functor {
 };
 
 void operator_pow(const Storage *input1, float e, Storage *outputs) {
-  pow_functor f(e);
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
-                    outputs->get_data().begin(), f);
+                    outputs->get_data().begin(), pow_functor(e));
 }
 
 struct log_functor {
@@ -91,9 +88,8 @@ struct log_functor {
 };
 
 void operator_log(const Storage *input1, Storage *outputs) {
-  log_functor f;
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
-                    outputs->get_data().begin(), f);
+                    outputs->get_data().begin(), log_functor());
 }
 
 struct exp_functor {
@@ -101,9 +97,8 @@ struct exp_functor {
 };
 
 void operator_exp(const Storage *input1, Storage *outputs) {
-  exp_functor f;
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
-                    outputs->get_data().begin(), f);
+                    outputs->get_data().begin(), exp_functor());
 }
 
 __global__ void operator_matmul_h(const float *input1, const float *input2,
@@ -113,8 +108,8 @@ __global__ void operator_matmul_h(const float *input1, const float *input2,
   __shared__ float shared_input2[TILE_SIZE][TILE_SIZE];
 
   int batch_idx = blockIdx.z;
-  if (!broadcast == 1) input1 += batch_idx * height * k;
-  if (!broadcast == 2) input2 += batch_idx * k * width;
+  if (broadcast != 1) input1 += batch_idx * height * k;
+  if (broadcast != 2) input2 += batch_idx * k * width;
   output += batch_idx * height * width;
 
   int bx = blockIdx.y;
