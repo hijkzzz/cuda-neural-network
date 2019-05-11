@@ -31,11 +31,29 @@ cmake --build
 ```
 
 ## Performance
+```
+conv 1 32 5 relu
+maxpool 2
+conv 32 64 5 relu
+maxpool 2
+conv 64 128 3 relu
+fc 4 * 128 128 relu
+fc 128 10 relu
+softmax
+
+shuffle = true
+batch_size = 64
+learning_rate = 0.003
+L2 = 0.0001
+beta = 0.99
+```
+
 * 1 epoch 95.3%
-* 5 epochs 99.0%
+* 10 epochs 99.1%
 
 ## TODO
-* Use CUDA Streams
+* Faster kernel functions
+* CUDA Streams
 
 ## References
 * [High Performance Convolutional Neural Networks for Document Processing](https://hal.inria.fr/file/index/docid/112631/filename/p1038112283956.pdf)
