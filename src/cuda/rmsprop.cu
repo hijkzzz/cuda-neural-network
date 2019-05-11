@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#define SQUARE_GRDAD_DEFALUT 0.01
+#define SQUARE_GRDAD_DEFALUT 0.001
 
 struct l2_grads_functor {
   const float l2;
