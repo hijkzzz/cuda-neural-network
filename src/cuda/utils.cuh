@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <cuda_runtime.h>
 #include <thrust/device_vector.h>
@@ -28,6 +28,15 @@
 
 #define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
 
+#define INIT_STORAGE(storage_ptr, shape)            \
+  do {                                              \
+    if (storage_ptr.get() == nullptr) {             \
+      storage_ptr.reset(new Storage(shape));        \
+    } else if (storage_ptr->get_shape() != shape) { \
+      storage_ptr->resize(shape);                   \
+    }                                               \
+  } while (0)
+
 inline __host__ __device__ void index2loc(int index, const int *shape, int dims,
                                           int *loc) {
   for (int i = dims - 1; i >= 0; i--) {
@@ -51,4 +60,12 @@ inline __host__ __device__ void swap(int &a, int &b) {
   int temp = a;
   a = b;
   b = temp;
+}
+
+template<class T>
+void print_vector(const std::vector<T> v) {
+  for (auto iter = v.begin(); iter != v.end(); iter++) {
+    std::cout << *iter << ", " ;
+  }
+  std::cout << std::endl;
 }

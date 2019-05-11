@@ -2,6 +2,7 @@
 
 #include <layer.cuh>
 #include <storage.cuh>
+#include <utils.cuh>
 #include <flatten.cuh>
 
 void Flatten::forward() {
@@ -15,11 +16,7 @@ void Flatten::forward() {
   if (this->inplace) {
     input->reshape(out_shape);
   } else {
-    if (this->output.get() == nullptr ||
-        this->output->get_shape() != out_shape) {
-      this->output.reset(new Storage(out_shape));
-    }
-
+    INIT_STORAGE(this->output, out_shape);
     this->output->get_data() = input->get_data();
   }
 }
@@ -30,11 +27,7 @@ void Flatten::backward() {
   if (this->inplace) {
     output_grad->reshape(this->in_shape);
   } else {
-    if (this->grad.get() == nullptr ||
-        this->grad->get_shape() != this->in_shape) {
-      this->grad.reset(new Storage(this->in_shape));
-    }
-
+    INIT_STORAGE(this->grad, this->in_shape);
     this->grad->get_data() = output_grad->get_data();
   }
 }

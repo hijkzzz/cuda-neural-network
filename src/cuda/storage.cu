@@ -73,6 +73,18 @@ void Storage::reshape(const std::vector<int> &_shape) {
   this->check_size();
 }
 
+void Storage::resize(const std::vector<int> &_shape) {
+  this->shape = _shape;
+
+  int size = 1;
+  for (int i = 0; i < _shape.size(); i++) {
+    size *= _shape[i];
+  }
+
+  if (size != this->data.size()) this->data.resize(size);
+  this->check_size();
+}
+
 __global__ void storage_xavier(float *a, int size, float scale,
                                curandState *cs) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;

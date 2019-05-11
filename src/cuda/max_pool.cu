@@ -161,14 +161,11 @@ void MaxPool::forward() {
   int pooled_height = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int pooled_width = (width + 2 * pad_w - kernel_w) / stride_w + 1;
 
-  std::vector<int> output_shape(
-      {batch_size, channels, pooled_height, pooled_width});
+  std::vector<int> output_shape{batch_size, channels, pooled_height,
+                                pooled_width};
 
-  if (this->output.get() == nullptr ||
-      this->output->get_shape() != output_shape) {
-    this->output.reset(new Storage(output_shape));
-    this->mask.reset(new Storage(output_shape));
-  }
+  INIT_STORAGE(this->output, output_shape);
+  INIT_STORAGE(this->mask, output_shape);
 
   operator_max_pool(input, this->mask.get(), this->kernel_h, this->kernel_w,
                     this->pad_h, this->pad_w, this->stride_h, this->stride_w,
@@ -179,10 +176,7 @@ void MaxPool::backward() {
   const Storage* input = this->pre->get_output();
   const Storage* output_grad = this->next->get_grad();
 
-  if (this->grad.get() == nullptr ||
-      this->grad->get_shape() != input->get_shape()) {
-    this->grad.reset(new Storage(input->get_shape()));
-  }
+  INIT_STORAGE(this->grad, input->get_shape());
 
   operator_d_max_pool(output_grad, input, this->mask.get(), this->kernel_h,
                       this->kernel_w, this->pad_h, this->pad_w, this->stride_h,

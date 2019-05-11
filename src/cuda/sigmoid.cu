@@ -32,10 +32,7 @@ void operator_d_sigmoid(const Storage *outputs_grad, const Storage *input1,
 void Sigmoid::forward() {
   const Storage *input = this->pre->get_output();
 
-  if (this->output.get() == nullptr ||
-      this->output->get_shape() != input->get_shape()) {
-    this->output.reset(new Storage(input->get_shape()));
-  }
+  INIT_STORAGE(this->output, input->get_shape());
   operator_sigmoid(input, this->output.get());
 }
 
@@ -43,9 +40,6 @@ void Sigmoid::backward() {
   const Storage *input = this->pre->get_output();
   const Storage *output_grad = this->next->get_grad();
 
-  if (this->grad.get() == nullptr ||
-      this->grad->get_shape() != input->get_shape()) {
-    this->grad.reset(new Storage(input->get_shape()));
-  }
+  INIT_STORAGE(this->grad, input->get_shape());
   operator_d_sigmoid(output_grad, input, this->grad.get());
 }

@@ -76,10 +76,8 @@ std::vector<std::pair<Storage *, Storage *>> Linear::parameters() {
 void Linear::forward() {
   const Storage *input = this->pre->get_output();
   std::vector<int> output_shape = {input->get_shape()[0], this->out_size};
-  if (this->output.get() == nullptr ||
-      this->output->get_shape() != output_shape) {
-    this->output.reset(new Storage(output_shape));
-  }
+
+  INIT_STORAGE(this->output, output_shape);
 
   operator_linear(input, this->weights.get(), this->output.get());
   if (this->bias) {
@@ -92,10 +90,7 @@ void Linear::backward() {
   const Storage *input = this->pre->get_output();
   const Storage *output_grad = this->next->get_grad();
 
-  if (this->grad.get() == nullptr ||
-      this->grad->get_shape() != input->get_shape()) {
-    this->grad.reset(new Storage(input->get_shape()));
-  }
+  INIT_STORAGE(this->grad, input->get_shape());
 
   if (this->bias) {
     operator_d_linear_bias(output_grad, this->bias_grad.get());

@@ -32,10 +32,7 @@ void ReLU::forward() {
   if (this->inplace) {
     operator_relu(input, input);
   } else {
-    if (this->output.get() == nullptr ||
-        this->output->get_shape() != input->get_shape()) {
-      this->output.reset(new Storage(input->get_shape()));
-    }
+    INIT_STORAGE(this->output, input->get_shape());
     operator_relu(input, this->output.get());
   }
 }
@@ -47,10 +44,7 @@ void ReLU::backward() {
   if (this->inplace) {
     operator_d_relu(output_grad, input, output_grad);
   } else {
-    if (this->grad.get() == nullptr ||
-        this->grad->get_shape() != input->get_shape()) {
-      this->grad.reset(new Storage(input->get_shape()));
-    }
+    INIT_STORAGE(this->grad, input->get_shape());
     operator_d_relu(output_grad, input, this->grad.get());
   }
 }

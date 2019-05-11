@@ -31,10 +31,6 @@ void NLLLoss::forward(const Storage *y) {
 void NLLLoss::backward() {
   const Storage *input = this->pre->get_output();
 
-  if (this->grad.get() == nullptr ||
-      this->grad->get_shape() != input->get_shape()) {
-    this->grad.reset(new Storage(input->get_shape()));
-  }
-
+  INIT_STORAGE(this->grad, input->get_shape());
   operator_d_nll_loss(this->y, this->grad.get());
 }

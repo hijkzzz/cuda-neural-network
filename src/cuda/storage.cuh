@@ -21,8 +21,9 @@ class Storage {
   Storage(Storage &&other);
   Storage &operator=(Storage &&other);
 
-  void xavier(size_t in_size, size_t out_size);
   void reshape(const std::vector<int> &_shape);
+  void resize(const std::vector<int> &_shape);
+  void xavier(size_t in_size, size_t out_size);
 
   // get
   std::vector<int> &get_shape() { return this->shape; };

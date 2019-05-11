@@ -1,4 +1,4 @@
-﻿#include <softmax.cuh>
+#include <softmax.cuh>
 
 __global__ void operator_log_softmax_h(const float *input1, float *output,
                                        const int *input1_shape, int input1_dims,
@@ -145,11 +145,8 @@ void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
 
 void LogSoftmax::forward() {
   const Storage *input = this->pre->get_output();
-  if (this->output.get() == nullptr ||
-      this->output->get_shape() != input->get_shape()) {
-    this->output.reset(new Storage(input->get_shape()));
-  }
 
+  INIT_STORAGE(this->output, input->get_shape());
   operator_log_softmax(input, this->dim, this->output.get());
 }
 
@@ -157,10 +154,6 @@ void LogSoftmax::backward() {
   const Storage *input = this->pre->get_output();
   const Storage *output_grad = this->next->get_grad();
 
-  if (this->grad.get() == nullptr ||
-      this->grad->get_shape() != input->get_shape()) {
-    this->grad.reset(new Storage(input->get_shape()));
-  }
-
+  INIT_STORAGE(this->grad, input->get_shape());
   operator_d_log_softmax(output_grad, input, this->dim, this->grad.get());
 }
