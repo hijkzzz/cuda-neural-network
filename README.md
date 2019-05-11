@@ -1,4 +1,4 @@
-﻿# neural-network
+# neural-network
 Convolutional Neural Network with CUDA
 
 ## Layers
@@ -31,8 +31,8 @@ cmake --build
 ```
 
 ## Performance
-* 1 epoch 96.1%
-* 10 epochs 98.7%
+* 1 epoch 95.3%
+* 5 epochs 99.0%
 
 ## TODO
 * Use CUDA Streams
