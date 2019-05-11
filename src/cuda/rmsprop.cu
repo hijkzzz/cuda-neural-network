@@ -9,37 +9,23 @@
 
 #define SQUARE_GRDAD_DEFALUT 0.001
 
-struct l2_grads_functor {
-  const float l2;
-
-  l2_grads_functor(float _l2) : l2(_l2) {}
-
-  __host__ __device__ float operator()(const float &x, const float &y) const {
-    return x + l2 * y;
-  }
-};
-
-struct suqare_grads_functor {
-  const float b;
-
-  suqare_grads_functor(float _b) : b(_b) {}
-
-  __host__ __device__ float operator()(const float &x, const float &y) const {
-    float sq = powf(y, 2);
-    return b * x + (1 - b) * sq;
-  }
-};
-
 struct update_functor {
-  const float a;
+  const float lr;
+  const float l2;
+  const float beta;
 
-  update_functor(float _a) : a(_a) {}
+  update_functor(float lr, float l2, float beta) : lr(lr), l2(l2), beta(beta) {}
 
   template <typename Tuple>
   __host__ __device__ void operator()(Tuple t) {
-    // weights -= learning_rate * grads / (sqrt(suaqre_grads) + 1e-10)
-    thrust::get<0>(t) -=
-        (a * thrust::get<1>(t) / (sqrtf(thrust::get<2>(t)) + 1e-10));
+    float grad = thrust::get<1>(t) + l2 * thrust::get<0>(t);
+    float square_grad = powf(grad, 2);
+    float mean_square_grad =
+        beta * thrust::get<2>(t) + (1 - beta) * square_grad;
+    thrust::get<2>(t) = mean_square_grad;
+
+    // weights -= learning_rate * grad / (sqrt(mean_square_grad) + 1e-10)
+    thrust::get<0>(t) -= (lr * grad / (sqrtf(mean_square_grad) + 1e-10));
   }
 };
 
@@ -51,26 +37,14 @@ void rmsprop_update(Storage *square_grads, Storage *weights,
   CHECK_EQ(weights->get_data().size(), grads->get_data().size(),
            "RMSProp: grads size error 2");
 
-  // add L2 weights grads
-  thrust::device_vector<float> l2_grads(grads->get_data().size());
-  thrust::transform(grads->get_data().begin(), grads->get_data().end(),
-                    weights->get_data().begin(), l2_grads.begin(),
-                    l2_grads_functor(l2));
-
-  // square grads
-  thrust::transform(square_grads->get_data().begin(),
-                    square_grads->get_data().end(), l2_grads.begin(),
-                    square_grads->get_data().begin(),
-                    suqare_grads_functor(beta));
-
   // update weights
   thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(
-                       weights->get_data().begin(), l2_grads.begin(),
+                       weights->get_data().begin(), grads->get_data().begin(),
                        square_grads->get_data().begin())),
                    thrust::make_zip_iterator(thrust::make_tuple(
-                       weights->get_data().end(), l2_grads.end(),
+                       weights->get_data().end(), grads->get_data().end(),
                        square_grads->get_data().end())),
-                   update_functor(learning_rate));
+                   update_functor(learning_rate, l2, beta));
 }
 
 void RMSProp::regist(std::vector<std::pair<Storage *, Storage *>> params) {
