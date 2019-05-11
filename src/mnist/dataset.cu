@@ -1,4 +1,5 @@
 #include <dataset.cuh>
+#include <utils.cuh>
 
 #include <algorithm>
 #include <chrono>
@@ -76,10 +77,7 @@ void DataSet::forward(int batch_size, bool is_train) {
 
     // init device memory
     std::vector<int> output_shape{size, 1, this->height, this->width};
-    if (this->output.get() == nullptr ||
-        this->output->get_shape() != output_shape) {
-      this->output.reset(new Storage(output_shape));
-    }
+    INIT_STORAGE(this->output, output_shape);
     this->output_label.reset(new Storage({size, 10}, 0));
 
     // copy to device memory
