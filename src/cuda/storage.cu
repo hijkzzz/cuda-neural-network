@@ -81,8 +81,10 @@ void Storage::resize(const std::vector<int> &_shape) {
     size *= _shape[i];
   }
 
-  if (size != this->data.size()) this->data.resize(size);
-  this->check_size();
+  if (size != this->data.size()) {
+    std::cout << "RESIZE" << std::endl;
+    this->data.resize(size);
+  }
 }
 
 __global__ void storage_xavier(float *a, int size, float scale,
@@ -108,8 +110,6 @@ void Storage::xavier(size_t in_size, size_t out_size) {
 }
 
 void Storage::check_size() {
-  CHECK_EQ(true, this->shape.size() >= 2,
-           "Storage: shape error, shape.size() < 2");
   int size = 1;
   for (int i = 0; i < this->shape.size(); i++) {
     size *= this->shape[i];
