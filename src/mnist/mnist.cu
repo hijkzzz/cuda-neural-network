@@ -61,15 +61,16 @@ void Minist::train(int epochs, int batch_size) {
       backward();
       rmsprop->step();
 
-      float loss = this->nll_loss->get_output()->get_data()[0];
-      auto acc = top1_accuracy(this->log_softmax->get_output()->get_data(), 10,
-                               this->dataset->get_label()->get_data());
+      if (idx % 10 == 0) {
+        float loss = this->nll_loss->get_output()->get_data()[0];
+        auto acc = top1_accuracy(this->log_softmax->get_output()->get_data(),
+                                 10, this->dataset->get_label()->get_data());
 
-      if (idx % 10 == 0)
         std::cout << "Epoch: " << epoch << ", Batch: " << idx
                   << ", NLLLoss: " << loss
                   << ", Train Accuracy: " << (float(acc.first) / acc.second)
                   << std::endl;
+      }
       ++idx;
     }
 
@@ -87,10 +88,11 @@ void Minist::test(int batch_size) {
     forward(batch_size, false);
     auto acc = top1_accuracy(this->log_softmax->get_output()->get_data(), 10,
                              this->dataset->get_label()->get_data());
-    if (idx % 10 == 0)
+    if (idx % 10 == 0) {
       std::cout << "Batch: " << idx
                 << ", Test Accuracy: " << (float(acc.first) / acc.second)
                 << std::endl;
+    }
 
     count += acc.first;
     total += acc.second;
