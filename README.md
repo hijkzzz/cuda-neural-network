@@ -48,8 +48,8 @@ L2 = 0.0001
 beta = 0.99
 ```
 
-* 1 epoch 95.3%
-* 10 epochs 99.1%
+* 1 epoch 97.5%
+* 10 epochs 99.2%
 
 ## TODO
 * Faster kernel functions
