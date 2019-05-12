@@ -24,7 +24,7 @@ if (MSVC)
     # warning
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/wd 4819\"")
 
-    if (!CMAKE_BUILD_TYPE STREQUAL Debug)
+    if (NOT CMAKE_BUILD_TYPE STREQUAL Debug)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O2")
     endif()
 
