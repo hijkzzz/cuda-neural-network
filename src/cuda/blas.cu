@@ -1,4 +1,4 @@
-#include <blas.cuh>
+﻿#include <blas.cuh>
 #include <utils.cuh>
 
 #include <cuda_runtime.h>
@@ -254,13 +254,13 @@ __global__ void operator_mean_h(const float *input1, float *output,
 void operator_mean(const Storage *input1, int dim, Storage *outputs) {
   // input
   const float *input1_ptr = RAW_PTR(input1->get_data());
-  thrust::device_vector<int> input_shape(input1->get_shape());
+  thrust::device_vector<int> input_shape = input1->get_shape();
   const int *input1_shape_ptr = RAW_PTR(input_shape);
   int input1_dims = input1->get_shape().size();
 
   // output
   float *output_ptr = RAW_PTR(outputs->get_data());
-  thrust::device_vector<int> temp_shape(input1->get_shape());
+  thrust::device_vector<int> temp_shape = input_shape;
   temp_shape.erase(temp_shape.begin() + dim);
   int *temp_shape_ptr = RAW_PTR(temp_shape);
 
@@ -312,13 +312,13 @@ __global__ void operator_sum_h(const float *input1, float *output,
 void operator_sum(const Storage *input1, int dim, Storage *outputs) {
   // input
   const float *input1_ptr = RAW_PTR(input1->get_data());
-  thrust::device_vector<int> input_shape(input1->get_shape());
+  thrust::device_vector<int> input_shape = input1->get_shape();
   const int *input1_shape_ptr = RAW_PTR(input_shape);
   int input1_dims = input1->get_shape().size();
 
   // output
   float *output_ptr = RAW_PTR(outputs->get_data());
-  thrust::device_vector<int> temp_shape(input1->get_shape());
+  thrust::device_vector<int> temp_shape = input_shape;
   temp_shape.erase(temp_shape.begin() + dim);
   int *temp_shape_ptr = RAW_PTR(temp_shape);
 

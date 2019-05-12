@@ -1,7 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #include <blas.cuh>
 #include <layer.cuh>
+#include <unordered_map>
 
 #ifdef DEBUG
 
@@ -19,4 +20,6 @@ class NLLLoss : public Layer {
 
  private:
   const Storage *y;  // backup
+
+  std::unordered_map<std::string, std::unique_ptr<Storage>> temp;
 };

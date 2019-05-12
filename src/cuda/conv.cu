@@ -1,4 +1,4 @@
-#include <conv.cuh>
+﻿#include <conv.cuh>
 
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
@@ -218,10 +218,12 @@ void operator_d_conv(
   operator_transpose(cols, temp["cols_t"].get());  // last two dims transpose
 
   // dL/dF = dL/dY * col^T
-  Storage dl_df({batch_size, channel_out, channel_in * kernel_h * kernel_w});
+  std::vector<int> dl_df_shape{batch_size, channel_out,
+                               channel_in * kernel_h * kernel_w};
+  INIT_TEMP(temp, "dl_df", dl_df_shape);
   operator_matmul(outputs_grad, temp["cols_t"].get(),
-                  &dl_df);                // last two dims matmul
-  operator_sum(&dl_df, 0, filters_grad);  // sum along batch
+                  temp["dl_df"].get());                // last two dims matmul
+  operator_sum(temp["dl_df"].get(), 0, filters_grad);  // sum along batch
 
   // F^T
   std::vector<int> filters_t_shape{channel_in * kernel_h * kernel_w,
@@ -234,16 +236,17 @@ void operator_d_conv(
       {channel_out, channel_in, kernel_h, kernel_w});  // filters recover
 
   // dL/d_col = F^T * dL/dY
-  Storage dl_dcol(
-      {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col});
-  operator_matmul(temp["filters_t"].get(), outputs_grad, &dl_dcol,
+  std::vector<int> dl_dcol_shape{batch_size, channel_in * kernel_h * kernel_w,
+                                 height_col * width_col};
+  INIT_TEMP(temp, "dl_dcol", dl_df_shape);
+  operator_matmul(temp["filters_t"].get(), outputs_grad, temp["dl_dcol"].get(),
                   1);  // broadcast param 1
 
   // dL/dY recover
   outputs_grad->reshape({batch_size, channel_out, height_col, width_col});
 
   // dL/d_im = col2im(dL/d_col)
-  float *dl_dcol_ptr = RAW_PTR(dl_dcol.get_data());
+  float *dl_dcol_ptr = RAW_PTR(temp["dl_dcol"].get()->get_data());
   float *inputs_grad_ptr = RAW_PTR(inputs_grad->get_data());
   col2im(dl_dcol_ptr, batch_size, channel_in, height, width, kernel_h, kernel_w,
          pad_h, pad_w, stride_h, stride_w, inputs_grad_ptr);

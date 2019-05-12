@@ -1,4 +1,4 @@
-#include <softmax.cuh>
+﻿#include <softmax.cuh>
 
 __global__ void operator_log_softmax_h(const float *input1, float *output,
                                        const int *input1_shape, int input1_dims,
@@ -38,11 +38,11 @@ __global__ void operator_log_softmax_h(const float *input1, float *output,
 void operator_log_softmax(const Storage *input1, int dim, Storage *outputs) {
   // input
   const float *input1_ptr = RAW_PTR(input1->get_data());
-  thrust::device_vector<int> input_shape(input1->get_shape());
+  thrust::device_vector<int> input_shape = input1->get_shape();
   const int *input1_shape_ptr = RAW_PTR(input_shape);
   float *output_ptr = RAW_PTR(outputs->get_data());
 
-  thrust::device_vector<int> temp_shape(input1->get_shape());
+  thrust::device_vector<int> temp_shape = input_shape;
   temp_shape.erase(temp_shape.begin() + dim);
   int *temp_shape_ptr = RAW_PTR(temp_shape);
 
@@ -115,12 +115,12 @@ __global__ void operator_d_log_softmax_h(const float *output_grads,
 void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
                             int dim, Storage *inputs_grad) {
   const float *input1_ptr = RAW_PTR(input1->get_data());
-  thrust::device_vector<int> input_shape(input1->get_shape());
+  thrust::device_vector<int> input_shape = input1->get_shape();
   const int *input1_shape_ptr = RAW_PTR(input_shape);
   const float *output_grads_ptr = RAW_PTR(output_grads->get_data());
   float *input1_grads_ptr = RAW_PTR(inputs_grad->get_data());
 
-  thrust::device_vector<int> temp_shape(input1->get_shape());
+  thrust::device_vector<int> temp_shape = input_shape;
   temp_shape.erase(temp_shape.begin() + dim);
   int *temp_shape_ptr = RAW_PTR(temp_shape);
 
