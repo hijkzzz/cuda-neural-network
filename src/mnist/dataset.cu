@@ -1,5 +1,7 @@
-#include <dataset.cuh>
+﻿#include <dataset.cuh>
 #include <utils.cuh>
+
+#include <thrust/system/cuda/experimental/pinned_allocator.h>
 
 #include <algorithm>
 #include <chrono>
@@ -26,7 +28,8 @@ void DataSet::reset() {
 
   if (shuffle) {
     // keep random seed same
-    unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count() % 2019;
+    unsigned int seed =
+        std::chrono::system_clock::now().time_since_epoch().count() % 2019;
 
     std::shuffle(this->train_data.begin(), this->train_data.end(),
                  std::default_random_engine(seed));
@@ -45,14 +48,19 @@ void DataSet::forward(int batch_size, bool is_train) {
 
     // init device memory
     std::vector<int> output_shape{size, 1, this->height, this->width};
+    std::vector<int> output_label_shape{size, 10};
     INIT_STORAGE(this->output, output_shape);
-    this->output_label.reset(new Storage({size, 10}, 0));
+    INIT_STORAGE(this->output_label, output_label_shape);
+    thrust::fill(this->output_label->get_data().begin(),
+                 this->output_label->get_data().end(), 0);
 
     // copy to device memory
     int im_stride = 1 * this->height * this->width;
     int one_hot_stride = 10;
 
-    std::vector<float> train_data_buffer;
+    thrust::host_vector<
+        float, thrust::system::cuda::experimental::pinned_allocator<float>>
+        train_data_buffer;
     train_data_buffer.reserve(size * im_stride);
 
     for (int i = start; i < end; i++) {
@@ -62,8 +70,7 @@ void DataSet::forward(int batch_size, bool is_train) {
       this->output_label
           ->get_data()[(i - start) * one_hot_stride + this->train_label[i]] = 1;
     }
-    thrust::copy(train_data_buffer.begin(), train_data_buffer.end(),
-                 this->output->get_data().begin());
+    this->output->get_data() = train_data_buffer;
 
   } else {
     int start = this->test_data_index;
@@ -74,14 +81,19 @@ void DataSet::forward(int batch_size, bool is_train) {
 
     // init device memory
     std::vector<int> output_shape{size, 1, this->height, this->width};
+    std::vector<int> output_label_shape{size, 10};
     INIT_STORAGE(this->output, output_shape);
-    this->output_label.reset(new Storage({size, 10}, 0));
+    INIT_STORAGE(this->output_label, output_label_shape);
+    thrust::fill(this->output_label->get_data().begin(),
+                 this->output_label->get_data().end(), 0);
 
     // copy to device memory
     int im_stride = 1 * this->height * this->width;
     int one_hot_stride = 10;
 
-    std::vector<float> test_data_buffer;
+    thrust::host_vector<
+        float, thrust::system::cuda::experimental::pinned_allocator<float>>
+        test_data_buffer;
     test_data_buffer.reserve(size * im_stride);
 
     for (int i = start; i < end; i++) {
@@ -91,8 +103,7 @@ void DataSet::forward(int batch_size, bool is_train) {
       this->output_label
           ->get_data()[(i - start) * one_hot_stride + this->test_label[i]] = 1;
     }
-    thrust::copy(test_data_buffer.begin(), test_data_buffer.end(),
-                 this->output->get_data().begin());
+    this->output->get_data() = test_data_buffer;
   }
 }
 

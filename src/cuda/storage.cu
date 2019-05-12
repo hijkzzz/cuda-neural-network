@@ -39,17 +39,13 @@ Storage::Storage(const std::vector<int> &_shape,
 
 Storage::Storage(const Storage &other) {
   this->shape = other.shape;
-
-  this->data.resize(other.data.size());
-  thrust::copy(other.data.begin(), other.data.end(), this->data.begin());
+  this->data = other.data;
 }
 
 Storage &Storage::operator=(const Storage &other) {
   if (this != &other) {
     this->shape = other.shape;
-
-    this->data.resize(other.data.size());
-    thrust::copy(other.data.begin(), other.data.end(), this->data.begin());
+    this->data = other.data;
   }
 
   return *this;

@@ -62,13 +62,8 @@ void Minist::train(int epochs, int batch_size) {
       rmsprop->step();
 
       float loss = this->nll_loss->get_output()->get_data()[0];
-      auto acc = top1_accuracy(
-          std::vector<float>(
-              this->log_softmax->get_output()->get_data().begin(),
-              this->log_softmax->get_output()->get_data().end()),
-          10,
-          std::vector<float>(this->dataset->get_label()->get_data().begin(),
-                             this->dataset->get_label()->get_data().end()));
+      auto acc = top1_accuracy(this->log_softmax->get_output()->get_data(), 10,
+                               this->dataset->get_label()->get_data());
 
       if (idx % 10 == 0)
         std::cout << "Epoch: " << epoch << ", Batch: " << idx
@@ -90,12 +85,8 @@ void Minist::test(int batch_size) {
 
   while (dataset->has_next(false)) {
     forward(batch_size, false);
-    auto acc = top1_accuracy(
-        std::vector<float>(this->log_softmax->get_output()->get_data().begin(),
-                           this->log_softmax->get_output()->get_data().end()),
-        10,
-        std::vector<float>(this->dataset->get_label()->get_data().begin(),
-                           this->dataset->get_label()->get_data().end()));
+    auto acc = top1_accuracy(this->log_softmax->get_output()->get_data(), 10,
+                             this->dataset->get_label()->get_data());
     if (idx % 10 == 0)
       std::cout << "Batch: " << idx
                 << ", Test Accuracy: " << (float(acc.first) / acc.second)
@@ -158,9 +149,9 @@ void Minist::backward() {
   conv1->backward();
 }
 
-std::pair<int, int> Minist::top1_accuracy(const std::vector<float>& probs,
+std::pair<int, int> Minist::top1_accuracy(const thrust::host_vector<float>& probs,
                                           int cls_size,
-                                          const std::vector<float>& labels) {
+                                          const thrust::host_vector<float>& labels) {
   int count = 0;
   int size = labels.size() / cls_size;
   for (int i = 0; i < size; i++) {
