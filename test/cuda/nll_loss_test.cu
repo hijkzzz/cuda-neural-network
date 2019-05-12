@@ -1,4 +1,4 @@
-#include <test_tools.h>
+﻿#include <test_tools.h>
 #include <nll_loss.cuh>
 
 #include <gtest/gtest.h>
@@ -9,10 +9,11 @@ TEST(NLLLoss, Forward) {
   Storage logP({3, 3}, {0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33});
 
   Storage loss({1, 1});
-  operator_nll_loss(&logP, &Y, &loss);
+  std::unordered_map<std::string, std::unique_ptr<Storage>> temp;
+  operator_nll_loss(&logP, &Y, &loss, temp);
   device_vector_cout(loss.get_data());
 
-  operator_nll_loss(&Y, &Y, &loss);
+  operator_nll_loss(&Y, &Y, &loss, temp);
   device_vector_cout(loss.get_data());
 }
 
