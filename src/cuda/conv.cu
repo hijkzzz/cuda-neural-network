@@ -180,10 +180,11 @@ void operator_conv(const Storage *inputs, Storage *filters, Storage *cols,
 // dL/dF = dL/dY * col^T
 // dL/d_col = F^T * dL/dY
 // dL/d_im = col2im(dL/d_col)
-void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
-                     const Storage *cols, Storage *filters, const int pad_h,
-                     const int pad_w, const int stride_h, const int stride_w,
-                     Storage *filters_grad, Storage *inputs_grad) {
+void operator_d_conv(
+    Storage *outputs_grad, const Storage *inputs, const Storage *cols,
+    Storage *filters, const int pad_h, const int pad_w, const int stride_h,
+    const int stride_w, Storage *filters_grad, Storage *inputs_grad,
+    std::unordered_map<std::string, std::unique_ptr<Storage>> &temp) {
   CHECK_EQ(outputs_grad->get_shape().size(), 4,
            "operator_d_conv: outputs_grad shape error");
   CHECK_EQ(inputs->get_shape().size(), 4,
@@ -211,27 +212,32 @@ void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
   outputs_grad->reshape({batch_size, channel_out, height_col * width_col});
 
   // col^T
-  Storage cols_t(
+  std::vector<int> cols_t_shape(
       {batch_size, height_col * width_col, channel_in * kernel_h * kernel_w});
-  operator_transpose(cols, &cols_t);  // last two dims transpose
+  INIT_TEMP(temp, "cols_t", cols_t_shape);
+  operator_transpose(cols, temp["cols_t"].get());  // last two dims transpose
 
   // dL/dF = dL/dY * col^T
   Storage dl_df({batch_size, channel_out, channel_in * kernel_h * kernel_w});
-  operator_matmul(outputs_grad, &cols_t, &dl_df);  // last two dims matmul
-  operator_sum(&dl_df, 0, filters_grad);           // sum along batch
+  operator_matmul(outputs_grad, temp["cols_t"].get(),
+                  &dl_df);                // last two dims matmul
+  operator_sum(&dl_df, 0, filters_grad);  // sum along batch
 
   // F^T
+  std::vector<int> filters_t_shape{channel_in * kernel_h * kernel_w,
+                                   channel_out};
+  INIT_TEMP(temp, "filters_t", filters_t_shape);
   filters->reshape(
       {channel_out, channel_in * kernel_h * kernel_w});  // filters reshape
-  Storage filters_t({channel_in * kernel_h * kernel_w, channel_out});
-  operator_transpose(filters, &filters_t);
+  operator_transpose(filters, temp["filters_t"].get());
   filters->reshape(
       {channel_out, channel_in, kernel_h, kernel_w});  // filters recover
 
   // dL/d_col = F^T * dL/dY
   Storage dl_dcol(
       {batch_size, channel_in * kernel_h * kernel_w, height_col * width_col});
-  operator_matmul(&filters_t, outputs_grad, &dl_dcol, 1);  // broadcast param 1
+  operator_matmul(temp["filters_t"].get(), outputs_grad, &dl_dcol,
+                  1);  // broadcast param 1
 
   // dL/dY recover
   outputs_grad->reshape({batch_size, channel_out, height_col, width_col});
@@ -275,22 +281,26 @@ void operator_conv_bias(const Storage *inputs, const Storage *bias,
   CUDA_POST_KERNEL_CHECK;
 }
 
-void operator_d_conv_bias(const Storage *outputs_grad, Storage *bias_grad) {
+void operator_d_conv_bias(
+    const Storage *outputs_grad, Storage *bias_grad,
+    std::unordered_map<std::string, std::unique_ptr<Storage>> &temp) {
   // N*C*H*W ==> 1*C
   int batch_size = outputs_grad->get_shape()[0];
   int channels = outputs_grad->get_shape()[1];
   int height = outputs_grad->get_shape()[2];
 
   // reduce W
-  Storage sum3({batch_size, channels, height});
-  operator_sum(outputs_grad, 3, &sum3);
+  std::vector<int> sum3_shape{batch_size, channels, height};
+  INIT_TEMP(temp, "sum3", sum3_shape);
+  operator_sum(outputs_grad, 3, temp["sum3"].get());
 
   // reduce H
-  Storage sum2({batch_size, channels});
-  operator_sum(&sum3, 2, &sum2);
+  std::vector<int> sum2_shape({batch_size, channels});
+  INIT_TEMP(temp, "sum2", sum2_shape);
+  operator_sum(temp["sum3"].get(), 2, temp["sum2"].get());
 
   // reduce N
-  operator_sum(&sum2, 0, bias_grad);
+  operator_sum(temp["sum2"].get(), 0, bias_grad);
 }
 
 Conv::Conv(int height, int width, int channel_in, int channel_out, int kernel_h,
@@ -367,10 +377,10 @@ void Conv::backward() {
   INIT_STORAGE(this->grad, input->get_shape());
 
   if (this->bias) {
-    operator_d_conv_bias(output_grad, this->bias_grad.get());
+    operator_d_conv_bias(output_grad, this->bias_grad.get(), this->temp);
   }
 
   operator_d_conv(output_grad, input, this->cols.get(), this->filters.get(),
                   pad_h, pad_w, stride_h, stride_w, this->filters_grad.get(),
-                  this->grad.get());
+                  this->grad.get(), this->temp);
 }

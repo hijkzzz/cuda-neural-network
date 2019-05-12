@@ -6,20 +6,27 @@ void operator_linear(const Storage *inputs, const Storage *weights,
   operator_matmul(inputs, weights, output);
 }
 
-void operator_d_linear(const Storage *outputs_grad, const Storage *inputs,
-                       const Storage *weights, Storage *weights_grad,
-                       Storage *inputs_grad) {
-  Storage weights_transpose({weights->get_shape()[1], weights->get_shape()[0]});
-  operator_transpose(weights, &weights_transpose);
+void operator_d_linear(
+    const Storage *outputs_grad, const Storage *inputs, const Storage *weights,
+    Storage *weights_grad, Storage *inputs_grad,
+    std::unordered_map<std::string, std::unique_ptr<Storage>> &temp) {
+  // W^T
+  std::vector<int> weights_t_shape{weights->get_shape()[1],
+                                   weights->get_shape()[0]};
+  INIT_TEMP(temp, "weights_t", weights_t_shape);
+  operator_transpose(weights, temp["weights_t"].get());
 
-  Storage inputs_transpose({inputs->get_shape()[1], inputs->get_shape()[0]});
-  operator_transpose(inputs, &inputs_transpose);
+  // X^T
+  std::vector<int> inputs_t_shape(
+      {inputs->get_shape()[1], inputs->get_shape()[0]});
+  INIT_TEMP(temp, "inputs_t", inputs_t_shape);
+  operator_transpose(inputs, temp["inputs_t"].get());
 
   // Y = X * W
   // dL/dX = dL/dY * W^T
   // dL/dW = X^T * dL/dY
-  operator_matmul(outputs_grad, &weights_transpose, inputs_grad);
-  operator_matmul(&inputs_transpose, outputs_grad, weights_grad);
+  operator_matmul(outputs_grad, temp["weights_t"].get(), inputs_grad);
+  operator_matmul(temp["inputs_t"].get(), outputs_grad, weights_grad);
 }
 
 __global__ void operator_bias_h(const float *inputs, const float *bias,
@@ -97,5 +104,5 @@ void Linear::backward() {
   }
 
   operator_d_linear(output_grad, input, this->weights.get(),
-                    this->weights_grad.get(), this->grad.get());
+                    this->weights_grad.get(), this->grad.get(), this->temp);
 }

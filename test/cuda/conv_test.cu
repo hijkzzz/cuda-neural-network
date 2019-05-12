@@ -189,10 +189,11 @@ TEST(ConvTest, ConvBackward) {
          pad_h, pad_w, stride_h, stride_w, col_ptr);
 
   // backward
+  std::unordered_map<std::string, std::unique_ptr<Storage>> temp;
   Storage input_grad({batch_size, channel_in, height, width});
   Storage filters_grad({channel_out, channel_in, kernel_h, kernel_w});
   operator_d_conv(&output_grad, &input, &cols, &filter, pad_h, pad_w, stride_h,
-                  stride_w, &filters_grad, &input_grad);
+                  stride_w, &filters_grad, &input_grad, temp);
 
   std::cout << "conv_d input" << std::endl;
   ASSERT_TRUE(device_vector_equals_vector(
@@ -236,6 +237,7 @@ TEST(ConvTest, ConvBiasBackward) {
        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
 
   Storage bias_grad({1, 2});
-  operator_d_conv_bias(&output_grad, &bias_grad);
+  std::unordered_map<std::string, std::unique_ptr<Storage>> temp;
+  operator_d_conv_bias(&output_grad, &bias_grad, temp);
   ASSERT_TRUE(device_vector_equals_vector(bias_grad.get_data(), {72, 234}));
 }

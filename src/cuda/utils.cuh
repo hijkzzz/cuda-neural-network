@@ -37,6 +37,14 @@
     }                                               \
   } while (0)
 
+#define INIT_TEMP(dict, key_name, shape)                 \
+  do {                                                   \
+    if (dict.find(key_name) == dict.end()) {             \
+      dict[key_name] = std::make_unique<Storage>(shape); \
+    }                                                    \
+    INIT_STORAGE(dict[key_name], shape);                 \
+  } while (0)
+
 #define RAW_PTR(vector) thrust::raw_pointer_cast(vector.data())
 
 inline __host__ __device__ void index2loc(int index, const int *shape, int dims,

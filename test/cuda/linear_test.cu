@@ -17,8 +17,9 @@ TEST(LinearTest, WeightBackward) {
 
   Storage weights_grad({3, 3});
   Storage inputs_grad({2, 3});
+  std::unordered_map<std::string, std::unique_ptr<Storage>> temp;
   operator_d_linear(&outputs_grad, &inputs, &weights, &weights_grad,
-                    &inputs_grad);
+                    &inputs_grad, temp);
 
   ASSERT_TRUE(device_vector_equals_vector(weights_grad.get_data(),
                                           {9, 12, 15, 12, 17, 22, 15, 22, 29}));
