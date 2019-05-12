@@ -49,7 +49,7 @@ beta = 0.99
 ```
 
 * 1 epoch 93%
-* 10 epochs 99.2%
+* 10 epochs 99.16%
 
 ## TODO
 * Faster kernel functions
