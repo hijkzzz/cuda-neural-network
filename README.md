@@ -1,4 +1,4 @@
-# neural-network
+﻿# neural-network
 Convolutional Neural Network with CUDA
 
 ## Layers
@@ -42,13 +42,13 @@ fc 128 10 relu
 softmax
 
 shuffle = true
-batch_size = 64
+batch_size = 128
 learning_rate = 0.003
 L2 = 0.0001
 beta = 0.99
 ```
 
-* 1 epoch 97.5%
+* 1 epoch 93%
 * 10 epochs 99.2%
 
 ## TODO
