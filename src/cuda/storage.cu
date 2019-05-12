@@ -1,4 +1,4 @@
-#include <storage.cuh>
+﻿#include <storage.cuh>
 #include <utils.cuh>
 
 #include <curand_kernel.h>
@@ -30,17 +30,7 @@ Storage::Storage(const std::vector<int> &_shape,
   this->check_size();
 }
 
-Storage::Storage(const std::vector<int> &_shape,
-                 thrust::device_vector<float>::const_iterator begin,
-                 thrust::device_vector<float>::const_iterator end)
-    : shape(_shape), data(begin, end) {
-  this->check_size();
-}
-
-Storage::Storage(const Storage &other) {
-  this->shape = other.shape;
-  this->data = other.data;
-}
+Storage::Storage(const Storage &other) { *this = other; }
 
 Storage &Storage::operator=(const Storage &other) {
   if (this != &other) {
@@ -51,10 +41,7 @@ Storage &Storage::operator=(const Storage &other) {
   return *this;
 }
 
-Storage::Storage(Storage &&other) {
-  this->shape = std::move(other.shape);
-  this->data = std::move(other.data);
-}
+Storage::Storage(Storage &&other) { *this = std::move(other); }
 
 Storage &Storage::operator=(Storage &&other) {
   if (this != &other) {
