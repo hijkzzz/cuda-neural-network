@@ -82,7 +82,6 @@ void Storage::resize(const std::vector<int> &_shape) {
   }
 
   if (size != this->data.size()) {
-    std::cout << "RESIZE" << std::endl;
     this->data.resize(size);
   }
 }
