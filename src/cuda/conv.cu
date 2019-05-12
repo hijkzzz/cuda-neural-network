@@ -159,10 +159,9 @@ void operator_conv(const Storage *inputs, Storage *filters, Storage *cols,
 
   // im2col
   // [batch_size*(C_in*k_h*k_w)*(height_col * width_col)]
-  const float *inputs_ptr = thrust::raw_pointer_cast(inputs->get_data().data());
-  const float *filters_ptr =
-      thrust::raw_pointer_cast(filters->get_data().data());
-  float *cols_ptr = thrust::raw_pointer_cast(cols->get_data().data());
+  const float *inputs_ptr = RAW_PTR(inputs->get_data());
+  const float *filters_ptr = RAW_PTR(filters->get_data());
+  float *cols_ptr = RAW_PTR(cols->get_data());
   im2col(inputs_ptr, batch_size, channel_in, height, width, kernel_h, kernel_w,
          pad_h, pad_w, stride_h, stride_w, cols_ptr);
 
@@ -238,9 +237,8 @@ void operator_d_conv(Storage *outputs_grad, const Storage *inputs,
   outputs_grad->reshape({batch_size, channel_out, height_col, width_col});
 
   // dL/d_im = col2im(dL/d_col)
-  float *dl_dcol_ptr = thrust::raw_pointer_cast(dl_dcol.get_data().data());
-  float *inputs_grad_ptr =
-      thrust::raw_pointer_cast(inputs_grad->get_data().data());
+  float *dl_dcol_ptr = RAW_PTR(dl_dcol.get_data());
+  float *inputs_grad_ptr = RAW_PTR(inputs_grad->get_data());
   col2im(dl_dcol_ptr, batch_size, channel_in, height, width, kernel_h, kernel_w,
          pad_h, pad_w, stride_h, stride_w, inputs_grad_ptr);
 }
@@ -261,9 +259,9 @@ void operator_conv_bias(const Storage *inputs, const Storage *bias,
   CHECK_EQ(bias->get_data().size(), *(inputs->get_shape().begin() + 1),
            "operator_conv_bias: size error");
 
-  const float *inputs_ptr = thrust::raw_pointer_cast(inputs->get_data().data());
-  const float *bias_ptr = thrust::raw_pointer_cast(bias->get_data().data());
-  float *output_ptr = thrust::raw_pointer_cast(output->get_data().data());
+  const float *inputs_ptr = RAW_PTR(inputs->get_data());
+  const float *bias_ptr = RAW_PTR(bias->get_data());
+  float *output_ptr = RAW_PTR(output->get_data());
 
   int channel_in = *(inputs->get_shape().rbegin() + 2);
   int height = *(inputs->get_shape().rbegin() + 1);

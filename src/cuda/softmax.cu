@@ -37,14 +37,14 @@ __global__ void operator_log_softmax_h(const float *input1, float *output,
 
 void operator_log_softmax(const Storage *input1, int dim, Storage *outputs) {
   // input
-  const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
+  const float *input1_ptr = RAW_PTR(input1->get_data());
   thrust::device_vector<int> input_shape(input1->get_shape());
-  const int *input1_shape_ptr = thrust::raw_pointer_cast(input_shape.data());
-  float *output_ptr = thrust::raw_pointer_cast(outputs->get_data().data());
+  const int *input1_shape_ptr = RAW_PTR(input_shape);
+  float *output_ptr = RAW_PTR(outputs->get_data());
 
   thrust::device_vector<int> temp_shape(input1->get_shape());
   temp_shape.erase(temp_shape.begin() + dim);
-  int *temp_shape_ptr = thrust::raw_pointer_cast(temp_shape.data());
+  int *temp_shape_ptr = RAW_PTR(temp_shape);
 
   // stride
   int input1_dims = input1->get_shape().size();
@@ -114,17 +114,15 @@ __global__ void operator_d_log_softmax_h(const float *output_grads,
 // dL/dX = dL/dY - (dL/dY * 1_n * exp(x)) / (exp(x) * 1_n)
 void operator_d_log_softmax(const Storage *output_grads, const Storage *input1,
                             int dim, Storage *inputs_grad) {
-  const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
+  const float *input1_ptr = RAW_PTR(input1->get_data());
   thrust::device_vector<int> input_shape(input1->get_shape());
-  const int *input1_shape_ptr = thrust::raw_pointer_cast(input_shape.data());
-  const float *output_grads_ptr =
-      thrust::raw_pointer_cast(output_grads->get_data().data());
-  float *input1_grads_ptr =
-      thrust::raw_pointer_cast(inputs_grad->get_data().data());
+  const int *input1_shape_ptr = RAW_PTR(input_shape);
+  const float *output_grads_ptr = RAW_PTR(output_grads->get_data());
+  float *input1_grads_ptr = RAW_PTR(inputs_grad->get_data());
 
   thrust::device_vector<int> temp_shape(input1->get_shape());
   temp_shape.erase(temp_shape.begin() + dim);
-  int *temp_shape_ptr = thrust::raw_pointer_cast(temp_shape.data());
+  int *temp_shape_ptr = RAW_PTR(temp_shape);
 
   int input1_dims = input1->get_shape().size();
   int dim_stride = 1;

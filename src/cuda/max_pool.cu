@@ -56,10 +56,9 @@ void operator_max_pool(const Storage* inputs, Storage* mask, int kernel_h,
   int pooled_height = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int pooled_width = (width + 2 * pad_w - kernel_w) / stride_w + 1;
 
-  const float* inputs_data_ptr =
-      thrust::raw_pointer_cast(inputs->get_data().data());
-  float* outputs_data_ptr = thrust::raw_pointer_cast(output->get_data().data());
-  float* mask_data_ptr = thrust::raw_pointer_cast(mask->get_data().data());
+  const float* inputs_data_ptr = RAW_PTR(inputs->get_data());
+  float* outputs_data_ptr = RAW_PTR(output->get_data());
+  float* mask_data_ptr = RAW_PTR(mask->get_data());
 
   int num_kernels = batch_size * channels * pooled_height * pooled_width;
   int grid_size = ceil((float)num_kernels / BLOCK_SIZE);
@@ -130,14 +129,10 @@ void operator_d_max_pool(const Storage* output_grads, const Storage* inputs,
   int pooled_height = (height + 2 * pad_h - kernel_h) / stride_h + 1;
   int pooled_width = (width + 2 * pad_w - kernel_w) / stride_w + 1;
 
-  const float* inputs_data_ptr =
-      thrust::raw_pointer_cast(inputs->get_data().data());
-  const float* outputs_grad_ptr =
-      thrust::raw_pointer_cast(output_grads->get_data().data());
-  const float* mask_data_ptr =
-      thrust::raw_pointer_cast(mask->get_data().data());
-  float* inputs_grad_ptr =
-      thrust::raw_pointer_cast(inputs_grad->get_data().data());
+  const float* inputs_data_ptr = RAW_PTR(inputs->get_data());
+  const float* outputs_grad_ptr = RAW_PTR(output_grads->get_data());
+  const float* mask_data_ptr = RAW_PTR(mask->get_data());
+  float* inputs_grad_ptr = RAW_PTR(inputs_grad->get_data());
 
   int num_kernels = batch_size * channels * height * width;
   int grid_size = ceil((float)num_kernels / BLOCK_SIZE);

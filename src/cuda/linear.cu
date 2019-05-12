@@ -34,9 +34,9 @@ __global__ void operator_bias_h(const float *inputs, const float *bias,
 
 void operator_linear_bias(const Storage *inputs, const Storage *bias,
                           Storage *output) {
-  const float *inputs_ptr = thrust::raw_pointer_cast(inputs->get_data().data());
-  const float *bias_ptr = thrust::raw_pointer_cast(bias->get_data().data());
-  float *output_ptr = thrust::raw_pointer_cast(output->get_data().data());
+  const float *inputs_ptr = RAW_PTR(inputs->get_data());
+  const float *bias_ptr = RAW_PTR(bias->get_data());
+  float *output_ptr = RAW_PTR(output->get_data());
 
   int size = inputs->get_data().size();
   int grid_size = ceil((float)(size) / BLOCK_SIZE);

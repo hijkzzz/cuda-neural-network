@@ -1,4 +1,4 @@
-﻿#include <blas.cuh>
+#include <blas.cuh>
 #include <utils.cuh>
 
 #include <cuda_runtime.h>
@@ -160,9 +160,9 @@ void operator_matmul(const Storage *input1, const Storage *input2,
   }
 
   // pointer
-  const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
-  const float *input2_ptr = thrust::raw_pointer_cast(input2->get_data().data());
-  float *output_ptr = thrust::raw_pointer_cast(outputs->get_data().data());
+  const float *input1_ptr = RAW_PTR(input1->get_data());
+  const float *input2_ptr = RAW_PTR(input2->get_data());
+  float *output_ptr = RAW_PTR(outputs->get_data());
 
   dim3 dim_block(TILE_SIZE, TILE_SIZE);
   dim3 dim_grid(ceil((float)width / TILE_SIZE), ceil((float)height / TILE_SIZE),
@@ -210,8 +210,8 @@ void operator_transpose(const Storage *input1, Storage *outputs) {
   }
 
   // input
-  const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
-  float *output_ptr = thrust::raw_pointer_cast(outputs->get_data().data());
+  const float *input1_ptr = RAW_PTR(input1->get_data());
+  float *output_ptr = RAW_PTR(outputs->get_data());
 
   dim3 dim_block(TILE_SIZE, TILE_SIZE);
   dim3 dim_grid(ceil((float)width / TILE_SIZE), ceil((float)height / TILE_SIZE),
@@ -253,16 +253,16 @@ __global__ void operator_mean_h(const float *input1, float *output,
 
 void operator_mean(const Storage *input1, int dim, Storage *outputs) {
   // input
-  const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
+  const float *input1_ptr = RAW_PTR(input1->get_data());
   thrust::device_vector<int> input_shape(input1->get_shape());
-  const int *input1_shape_ptr = thrust::raw_pointer_cast(input_shape.data());
+  const int *input1_shape_ptr = RAW_PTR(input_shape);
   int input1_dims = input1->get_shape().size();
 
   // output
-  float *output_ptr = thrust::raw_pointer_cast(outputs->get_data().data());
+  float *output_ptr = RAW_PTR(outputs->get_data());
   thrust::device_vector<int> temp_shape(input1->get_shape());
   temp_shape.erase(temp_shape.begin() + dim);
-  int *temp_shape_ptr = thrust::raw_pointer_cast(temp_shape.data());
+  int *temp_shape_ptr = RAW_PTR(temp_shape);
 
   // stride
   int dim_stride = 1;
@@ -311,16 +311,16 @@ __global__ void operator_sum_h(const float *input1, float *output,
 
 void operator_sum(const Storage *input1, int dim, Storage *outputs) {
   // input
-  const float *input1_ptr = thrust::raw_pointer_cast(input1->get_data().data());
+  const float *input1_ptr = RAW_PTR(input1->get_data());
   thrust::device_vector<int> input_shape(input1->get_shape());
-  const int *input1_shape_ptr = thrust::raw_pointer_cast(input_shape.data());
+  const int *input1_shape_ptr = RAW_PTR(input_shape);
   int input1_dims = input1->get_shape().size();
 
   // output
-  float *output_ptr = thrust::raw_pointer_cast(outputs->get_data().data());
+  float *output_ptr = RAW_PTR(outputs->get_data());
   thrust::device_vector<int> temp_shape(input1->get_shape());
   temp_shape.erase(temp_shape.begin() + dim);
-  int *temp_shape_ptr = thrust::raw_pointer_cast(temp_shape.data());
+  int *temp_shape_ptr = RAW_PTR(temp_shape);
 
   // stride
   int dim_stride = 1;

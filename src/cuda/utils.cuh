@@ -37,6 +37,8 @@
     }                                               \
   } while (0)
 
+#define RAW_PTR(vector) thrust::raw_pointer_cast(vector.data())
+
 inline __host__ __device__ void index2loc(int index, const int *shape, int dims,
                                           int *loc) {
   for (int i = dims - 1; i >= 0; i--) {
@@ -62,10 +64,10 @@ inline __host__ __device__ void swap(int &a, int &b) {
   b = temp;
 }
 
-template<class T>
+template <class T>
 void print_vector(const std::vector<T> v) {
   for (auto iter = v.begin(); iter != v.end(); iter++) {
-    std::cout << *iter << ", " ;
+    std::cout << *iter << ", ";
   }
   std::cout << std::endl;
 }
