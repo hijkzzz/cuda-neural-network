@@ -4,7 +4,7 @@
 #include <thrust/device_vector.h>
 #include <iostream>
 
-#define BLOCK_SIZE 512
+#define BLOCK_SIZE 256
 #define TILE_SIZE 16
 
 #define CHECK_EQ(val1, val2, message)                              \
@@ -72,8 +72,7 @@ inline __host__ __device__ void swap(int &a, int &b) {
   b = temp;
 }
 
-template <class T>
-void print_vector(const std::vector<T> v) {
+inline void print_device_vector(const thrust::device_vector<float> &v) {
   for (auto iter = v.begin(); iter != v.end(); iter++) {
     std::cout << *iter << ", ";
   }

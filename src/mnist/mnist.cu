@@ -1,4 +1,4 @@
-﻿#include <mnist.cuh>
+#include <mnist.cuh>
 
 Minist::Minist(std::string minst_data_path, float learning_rate, float l2,
                float beta) {
@@ -125,6 +125,7 @@ void Minist::forward(int batch_size, bool is_train) {
   fc2_relu->forward();
 
   log_softmax->forward();
+
   if (is_train) nll_loss->forward(labels);
 }
 
