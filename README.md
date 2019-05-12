@@ -50,9 +50,10 @@ beta = 0.99
 
 * 1 epoch 93%
 * 10 epochs 99.16%
+* 10s / epoch(GTX1070)
 
 ## TODO
-* Faster kernel functions
+* Faster matmul kernel function
 * CUDA Streams
 
 ## References
