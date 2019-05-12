@@ -19,7 +19,7 @@ struct update_functor {
   template <typename Tuple>
   __host__ __device__ void operator()(Tuple t) {
     float grad = thrust::get<1>(t) + l2 * thrust::get<0>(t);
-    float square_grad = powf(grad, 2);
+    float square_grad = grad * grad;
     float mean_square_grad =
         beta * thrust::get<2>(t) + (1 - beta) * square_grad;
     thrust::get<2>(t) = mean_square_grad;
