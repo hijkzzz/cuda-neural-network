@@ -16,10 +16,6 @@ TEST(StorageTest, Constructor) {
   Storage d({3, 3, 3}, temp);
   ASSERT_EQ(d.get_data().size(), 27);
   ASSERT_TRUE(device_vector_equals_vector(d.get_data(), temp));
-
-  thrust::device_vector<float> data2(3 * 3 * 3, 1);
-  Storage c({3, 3, 3}, data2.begin(), data2.end());
-  ASSERT_TRUE(device_vector_equals_vector(a.get_data(), temp));
 }
 
 TEST(StorageTest, Reshape) {

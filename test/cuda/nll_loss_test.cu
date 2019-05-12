@@ -1,4 +1,4 @@
-﻿#include <test_tools.h>
+#include <test_tools.h>
 #include <nll_loss.cuh>
 
 #include <gtest/gtest.h>

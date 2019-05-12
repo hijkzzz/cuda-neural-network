@@ -33,7 +33,8 @@ TEST(SoftMax, SoftMaxLossForwardBackward1) {
   Storage logp({3, 3});
   operator_log_softmax(&X, 1, &logp);
   Storage nll_loss({1, 1});
-  operator_nll_loss(&logp, &Y, &nll_loss);
+  std::unordered_map<std::string, std::unique_ptr<Storage>> temp;
+  operator_nll_loss(&logp, &Y, &nll_loss, temp);
   device_vector_cout(nll_loss.get_data());
 
   // backward
