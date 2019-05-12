@@ -30,8 +30,8 @@ class Minist {
   void backward();                              // neural network backward
 
   std::pair<int, int> top1_accuracy(
-      const thrust ::device_vector<float>& probs, int cls_size,
-      const thrust ::device_vector<float>& labels);  // top1_accuracy
+      const std::vector<float>& probs, int cls_size,
+      const std::vector<float>& labels);  // top1_accuracy
 
   // Conv1_5x5     1 * 32
   // MaxPool1_2x2
