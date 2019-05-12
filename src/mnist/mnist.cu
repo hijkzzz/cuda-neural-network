@@ -1,4 +1,4 @@
-#include <mnist.cuh>
+﻿#include <mnist.cuh>
 
 Minist::Minist(std::string minst_data_path, float learning_rate, float l2,
                float beta) {
@@ -149,9 +149,14 @@ void Minist::backward() {
   conv1->backward();
 }
 
-std::pair<int, int> Minist::top1_accuracy(const thrust::host_vector<float>& probs,
-                                          int cls_size,
-                                          const thrust::host_vector<float>& labels) {
+std::pair<int, int> Minist::top1_accuracy(
+    const thrust::host_vector<
+        float, thrust::system::cuda::experimental::pinned_allocator<float>>&
+        probs,
+    int cls_size,
+    const thrust::host_vector<
+        float, thrust::system::cuda::experimental::pinned_allocator<float>>&
+        labels) {
   int count = 0;
   int size = labels.size() / cls_size;
   for (int i = 0; i < size; i++) {
