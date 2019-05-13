@@ -1,6 +1,7 @@
 #pragma once
 
 #include <storage.cuh>
+#include <utils.cuh>
 
 #include <memory>
 #include <vector>

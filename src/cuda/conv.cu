@@ -1,4 +1,4 @@
-﻿#include <conv.cuh>
+#include <conv.cuh>
 
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
@@ -238,7 +238,7 @@ void operator_d_conv(
   // dL/d_col = F^T * dL/dY
   std::vector<int> dl_dcol_shape{batch_size, channel_in * kernel_h * kernel_w,
                                  height_col * width_col};
-  INIT_TEMP(temp, "dl_dcol", dl_df_shape);
+  INIT_TEMP(temp, "dl_dcol", dl_dcol_shape);
   operator_matmul(temp["filters_t"].get(), outputs_grad, temp["dl_dcol"].get(),
                   1);  // broadcast param 1
 
