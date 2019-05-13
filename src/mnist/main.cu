@@ -8,7 +8,7 @@
 #define BETA 0.99
 
 int main() {
-  // DataSet dataset("../mnist_data", true);
+  // DataSet dataset("./mnist_data", true);
   // dataset.forward(64, true);
   // dataset.print_im();
 
@@ -16,6 +16,6 @@ int main() {
   CHECK_EQ(cudaStatus, cudaSuccess,
            "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
 
-  Minist mnist("../mnist_data", LEARNING_RATE, L2, BETA);
+  Minist mnist("./mnist_data", LEARNING_RATE, L2, BETA);
   mnist.train(EPOCHS, BATCH_SIZE);
 }
