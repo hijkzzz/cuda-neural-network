@@ -20,13 +20,14 @@ void operator_sigmoid(const Storage *input1, Storage *output) {
 
 // Y = sigmoid(X)
 // dL/dX = sigmoid'(X) element_mul dL/dY
-void operator_d_sigmoid(const Storage *outputs_grad, const Storage *input1,
-                        Storage *inputs_grad) {
-  Storage d_sigmoid(input1->get_shape());
+void operator_d_sigmoid(
+    const Storage *outputs_grad, const Storage *input1, Storage *inputs_grad,
+    std::unordered_map<std::string, std::unique_ptr<Storage>> &temp) {
+  INIT_TEMP(temp, "d_sigmoid", input1->get_shape());
   thrust::transform(input1->get_data().begin(), input1->get_data().end(),
-                    d_sigmoid.get_data().begin(), sigmoid_d_functor());
+                    temp["d_sigmoid"]->get_data().begin(), sigmoid_d_functor());
 
-  operator_mul(&d_sigmoid, outputs_grad, inputs_grad);
+  operator_mul(temp["d_sigmoid"].get(), outputs_grad, inputs_grad);
 }
 
 void Sigmoid::forward() {
@@ -41,5 +42,5 @@ void Sigmoid::backward() {
   const Storage *output_grad = this->next->get_grad();
 
   INIT_STORAGE(this->grad, input->get_shape());
-  operator_d_sigmoid(output_grad, input, this->grad.get());
+  operator_d_sigmoid(output_grad, input, this->grad.get(), this->temp);
 }

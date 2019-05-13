@@ -17,7 +17,9 @@ TEST(Sigmoid, Backward) {
   Storage a({3, 3, 3}, 3);
   Storage o({3, 3, 3}, 3);
   Storage result({3, 3, 3});
-  operator_d_sigmoid(&o, &a, &result);
+
+  std::unordered_map<std::string, std::unique_ptr<Storage>> temp;
+  operator_d_sigmoid(&o, &a, &result, temp);
 
   float x = 1 / (1 + exp(-3));
   float xx = (1 - x) * x;
