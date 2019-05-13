@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Layer.cuh>
+#include <layer.cuh>
 #include <blas.cuh>
 
 #ifdef DEBUG
