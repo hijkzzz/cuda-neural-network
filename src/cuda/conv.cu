@@ -117,8 +117,8 @@ void col2im(const float *data_col, const int batch_size, const int channels,
             const int height, const int width, const int kernel_h,
             const int kernel_w, const int pad_h, const int pad_w,
             const int stride_h, const int stride_w, float *data_im) {
-  int height_col = height + 2 * pad_h - kernel_h / stride_h + 1;
-  int width_col = width + 2 * pad_w - kernel_w / stride_w + 1;
+  int height_col = (height + 2 * pad_h - kernel_h) / stride_h + 1;
+  int width_col = (width + 2 * pad_w - kernel_w) / stride_w + 1;
   int size = channels * height * width;
 
   // To avoid involving atomic operations, we will launch one kernel per
