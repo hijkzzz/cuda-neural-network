@@ -12,9 +12,9 @@ option(UNIT_TEST "googletest" OFF)
 # find cuda
 find_package(CUDA)
 include_directories(${CUDA_INCLUDE_DIRS})
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_61,code=sm_61")
+# set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_61,code=sm_61")
 set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -g -G")
-set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O2")
+# set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O2")
  
 if (CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -std=c++14")
@@ -27,16 +27,6 @@ if (MSVC)
     if (NOT CMAKE_BUILD_TYPE STREQUAL Debug)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O2")
     endif()
-
-    # static runtime
-    # set(CompilerFlags
-    #     CMAKE_CXX_FLAGS
-    #     CMAKE_CXX_FLAGS_DEBUG
-    #     CMAKE_CXX_FLAGS_RELEASE
-    #    )
-    # foreach(CompilerFlag ${CompilerFlags})
-    #   string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-    # endforeach()
 endif()
 
 # add cuda source
