@@ -22,7 +22,7 @@ Convolutional Neural Network with CUDA
 ```
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make
+make -j10
 mkdir mnist_data && cd mnist_data
 wget -c http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz
 wget -c http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz
